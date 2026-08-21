@@ -2,7 +2,7 @@
    AL JEFOON TENTS
    PAYROLL SYSTEM
    SCRIPT.JS
-   VERSION 2.2
+   VERSION 2.4
 ===================================================== */
 
 const EMPLOYEE_KEY = "alJefoonPayrollEmployeesV1";
@@ -115,6 +115,11 @@ function escapeHTML(value) {
 
 }
 
+
+/* =====================================================
+   EMPLOYEE ID GENERATOR
+   STARTS AT EMP003
+===================================================== */
 
 function generateID() {
 
@@ -244,11 +249,17 @@ function showSection(sectionID) {
 function loadDarkMode() {
 
     const dark =
-        localStorage.getItem(DARK_MODE_KEY) === "true";
+        localStorage.getItem(
+            DARK_MODE_KEY
+        ) === "true";
 
 
     if (dark) {
-        document.body.classList.add("dark-mode");
+
+        document.body.classList.add(
+            "dark-mode"
+        );
+
     }
 
 
@@ -283,7 +294,9 @@ function toggleDarkMode() {
 
 function updateDarkModeButton() {
 
-    const button = $("darkModeBtn");
+    const button =
+        $("darkModeBtn");
+
 
     if (!button) return;
 
@@ -321,12 +334,15 @@ loadDarkMode();
 
 function updateClock() {
 
-    const clock = $("clock");
+    const clock =
+        $("clock");
+
 
     if (!clock) return;
 
 
-    const now = new Date();
+    const now =
+        new Date();
 
 
     const date =
@@ -358,13 +374,16 @@ function updateClock() {
 }
 
 
-setInterval(updateClock, 1000);
+setInterval(
+    updateClock,
+    1000
+);
 
 updateClock();
 
 
 /* =====================================================
-   EMPLOYEE SALARY CALCULATIONS
+   EMPLOYEE SALARY
 ===================================================== */
 
 function getEmployeeSalary(employee) {
@@ -388,11 +407,9 @@ function getEmployeeFood(employee) {
 }
 
 
-/*
-    FOOD ALLOWANCE IS NOT INCLUDED
-    IN SALARY CALCULATIONS.
-*/
-
+/* =====================================================
+   MONTHLY SALARY PAYMENTS
+===================================================== */
 
 function getMonthSalaryPayment(
     employeeID,
@@ -414,12 +431,17 @@ function getMonthSalaryPayment(
         })
         .reduce(
             (total, transaction) =>
-                total + number(transaction.amount),
+                total +
+                number(transaction.amount),
             0
         );
 
 }
 
+
+/* =====================================================
+   SALARY DETAILS
+===================================================== */
 
 function getSalaryDetails(
     employee,
@@ -444,31 +466,37 @@ function getSalaryDetails(
         );
 
 
-    let status = "Pending";
+    let status =
+        "Pending";
 
 
     if (salary <= 0) {
 
-        status = "No Salary";
+        status =
+            "No Salary";
 
     }
     else if (paid >= salary) {
 
-        status = "Fully Paid";
+        status =
+            "Fully Paid";
 
     }
     else if (paid > 0) {
 
-        status = "Partially Paid";
+        status =
+            "Partially Paid";
 
     }
 
 
     return {
+
         salary,
         paid,
         pending,
         status
+
     };
 
 }
@@ -478,6 +506,23 @@ function getSalaryDetails(
    LEAVE CHECK
 ===================================================== */
 
+/*
+   IMPORTANT:
+
+   Leave can now be recorded WITHOUT dates.
+
+   If a leave record has:
+   - no start date
+   - no end date
+
+   it is treated as a general "On Leave"
+   record.
+
+   If dates are entered, the system will use
+   those dates to determine whether the employee
+   was on leave during a particular month.
+*/
+
 function isEmployeeOnLeave(
     employeeID,
     month
@@ -486,29 +531,106 @@ function isEmployeeOnLeave(
     return leaveRecords.some(record => {
 
         if (
-            record.employeeId !== employeeID
+            record.employeeId !==
+            employeeID
         ) {
+
             return false;
+
         }
 
 
         const start =
             record.startDate || "";
 
+
         const end =
             record.endDate || "";
 
 
-        if (!start) {
-            return false;
+        /*
+           NO DATES:
+           General leave record.
+        */
+
+        if (!start && !end) {
+
+            return true;
+
         }
 
 
-        const year =
-            Number(month.slice(0, 4));
+        /*
+           ONLY END DATE:
+           Treat as leave record beginning
+           before / during the selected month.
+        */
 
-        const monthNumber =
-            Number(month.slice(5, 7));
+        if (!start && end) {
+
+            return end >= month + "-01";
+
+        }
+
+
+        /*
+           ONLY START DATE:
+           Treat as leave beginning on
+           the selected date and continuing.
+        */
+
+        if (start && !end) {
+
+            const selectedYear =
+                Number(
+                    month.substring(0, 4)
+                );
+
+            const selectedMonth =
+                Number(
+                    month.substring(5, 7)
+                );
+
+
+            const monthEnd =
+                new Date(
+                    selectedYear,
+                    selectedMonth,
+                    0
+                );
+
+
+            const monthEndString =
+                monthEnd.getFullYear() +
+                "-" +
+                String(
+                    monthEnd.getMonth() + 1
+                ).padStart(2, "0") +
+                "-" +
+                String(
+                    monthEnd.getDate()
+                ).padStart(2, "0");
+
+
+            return start <= monthEndString;
+
+        }
+
+
+        /*
+           BOTH DATES:
+           Normal date range.
+        */
+
+        const selectedYear =
+            Number(
+                month.substring(0, 4)
+            );
+
+        const selectedMonth =
+            Number(
+                month.substring(5, 7)
+            );
 
 
         const monthStart =
@@ -517,8 +639,8 @@ function isEmployeeOnLeave(
 
         const lastDay =
             new Date(
-                year,
-                monthNumber,
+                selectedYear,
+                selectedMonth,
                 0
             ).getDate();
 
@@ -531,10 +653,7 @@ function isEmployeeOnLeave(
 
         return (
             start <= monthEnd &&
-            (
-                !end ||
-                end >= monthStart
-            )
+            end >= monthStart
         );
 
     });
@@ -559,7 +678,8 @@ if ($("addEmployeeBtn")) {
 
 function openEmployeeModal() {
 
-    const id = generateID();
+    const id =
+        generateID();
 
 
     openModal(
@@ -680,6 +800,7 @@ function openEmployeeModal() {
                 Cancel
             </button>
 
+
             <button
                 type="submit"
                 class="primary"
@@ -704,6 +825,10 @@ function openEmployeeModal() {
 }
 
 
+/* =====================================================
+   ADD EMPLOYEE
+===================================================== */
+
 function addEmployee() {
 
     const employee = {
@@ -712,26 +837,34 @@ function addEmployee() {
             $("employeeID").value,
 
         name:
-            $("employeeName").value.trim(),
+            $("employeeName")
+                .value
+                .trim(),
 
         salary:
             number(
-                $("employeeSalary").value
+                $("employeeSalary")
+                    .value
             ),
 
         foodAllowance:
             number(
-                $("employeeFood").value
+                $("employeeFood")
+                    .value
             ),
 
         position:
-            $("employeePosition").value.trim(),
+            $("employeePosition")
+                .value
+                .trim(),
 
         joiningDate:
-            $("employeeJoiningDate").value,
+            $("employeeJoiningDate")
+                .value,
 
         status:
-            $("employeeStatus").value,
+            $("employeeStatus")
+                .value,
 
         createdAt:
             new Date().toISOString()
@@ -750,7 +883,10 @@ function addEmployee() {
     }
 
 
-    employees.push(employee);
+    employees.push(
+        employee
+    );
+
 
     saveEmployees();
 
@@ -775,7 +911,8 @@ function editEmployee(id) {
 
     const employee =
         employees.find(
-            emp => emp.id === id
+            emp =>
+                emp.id === id
         );
 
 
@@ -852,7 +989,9 @@ function editEmployee(id) {
                 <input
                     type="text"
                     id="employeePosition"
-                    value="${escapeHTML(employee.position || "")}"
+                    value="${escapeHTML(
+                        employee.position || ""
+                    )}"
                 >
 
             </div>
@@ -879,14 +1018,23 @@ function editEmployee(id) {
 
                     <option
                         value="Active"
-                        ${employee.status === "Active" ? "selected" : ""}
+                        ${
+                            employee.status === "Active"
+                                ? "selected"
+                                : ""
+                        }
                     >
                         Active
                     </option>
 
+
                     <option
                         value="Inactive"
-                        ${employee.status === "Inactive" ? "selected" : ""}
+                        ${
+                            employee.status === "Inactive"
+                                ? "selected"
+                                : ""
+                        }
                     >
                         Inactive
                     </option>
@@ -908,6 +1056,7 @@ function editEmployee(id) {
                 Cancel
             </button>
 
+
             <button
                 type="submit"
                 class="primary"
@@ -927,26 +1076,39 @@ function editEmployee(id) {
 
 
             employee.name =
-                $("employeeName").value.trim();
+                $("employeeName")
+                    .value
+                    .trim();
+
 
             employee.salary =
                 number(
-                    $("employeeSalary").value
+                    $("employeeSalary")
+                        .value
                 );
+
 
             employee.foodAllowance =
                 number(
-                    $("employeeFood").value
+                    $("employeeFood")
+                        .value
                 );
 
+
             employee.position =
-                $("employeePosition").value.trim();
+                $("employeePosition")
+                    .value
+                    .trim();
+
 
             employee.joiningDate =
-                $("employeeJoiningDate").value;
+                $("employeeJoiningDate")
+                    .value;
+
 
             employee.status =
-                $("employeeStatus").value;
+                $("employeeStatus")
+                    .value;
 
 
             saveEmployees();
@@ -974,7 +1136,8 @@ function deleteEmployee(id) {
 
     const employee =
         employees.find(
-            emp => emp.id === id
+            emp =>
+                emp.id === id
         );
 
 
@@ -986,13 +1149,16 @@ function deleteEmployee(id) {
             `Delete ${employee.name} (${employee.id})?`
         )
     ) {
+
         return;
+
     }
 
 
     employees =
         employees.filter(
-            emp => emp.id !== id
+            emp =>
+                emp.id !== id
         );
 
 
@@ -1025,16 +1191,22 @@ function renderEmployees() {
     if (!employees.length) {
 
         table.innerHTML = `
+
             <tbody>
+
                 <tr>
+
                     <td
                         colspan="8"
                         class="empty"
                     >
                         No employees added yet.
                     </td>
+
                 </tr>
+
             </tbody>
+
         `;
 
         return;
@@ -1069,44 +1241,64 @@ function renderEmployees() {
                 <tr>
 
                     <td>
+
                         <strong>
-                            ${escapeHTML(employee.id)}
+                            ${escapeHTML(
+                                employee.id
+                            )}
                         </strong>
+
                     </td>
 
-                    <td>
-                        ${escapeHTML(employee.name)}
-                    </td>
 
                     <td>
                         ${escapeHTML(
-                            employee.position || "-"
+                            employee.name
                         )}
                     </td>
+
+
+                    <td>
+                        ${escapeHTML(
+                            employee.position ||
+                            "-"
+                        )}
+                    </td>
+
 
                     <td>
                         ${money(
-                            getEmployeeSalary(employee)
+                            getEmployeeSalary(
+                                employee
+                            )
                         )}
                     </td>
+
 
                     <td>
                         ${money(
-                            getEmployeeFood(employee)
+                            getEmployeeFood(
+                                employee
+                            )
                         )}
                     </td>
 
-                    <td>
-                        ${escapeHTML(
-                            employee.joiningDate || "-"
-                        )}
-                    </td>
 
                     <td>
                         ${escapeHTML(
-                            employee.status || "Active"
+                            employee.joiningDate ||
+                            "-"
                         )}
                     </td>
+
+
+                    <td>
+                        ${escapeHTML(
+                            employee.status ||
+                            "Active"
+                        )}
+                    </td>
+
 
                     <td>
 
@@ -1116,6 +1308,7 @@ function renderEmployees() {
                         >
                             Edit
                         </button>
+
 
                         <button
                             class="action-btn"
@@ -1138,7 +1331,7 @@ function renderEmployees() {
 
 
 /* =====================================================
-   ADD TRANSACTION
+   TRANSACTION MODAL
 ===================================================== */
 
 if ($("addTransactionBtn")) {
@@ -1168,7 +1361,9 @@ function openTransactionModal() {
     const options =
         employees.map(employee => `
 
-            <option value="${employee.id}">
+            <option
+                value="${employee.id}"
+            >
 
                 ${escapeHTML(employee.id)}
                 -
@@ -1291,6 +1486,7 @@ function openTransactionModal() {
                 Cancel
             </button>
 
+
             <button
                 type="submit"
                 class="primary"
@@ -1322,21 +1518,31 @@ function openTransactionModal() {
 function addTransaction() {
 
     const employeeId =
-        $("transactionEmployeeInput").value;
+        $("transactionEmployeeInput")
+            .value;
+
 
     const date =
-        $("transactionDateInput").value;
+        $("transactionDateInput")
+            .value;
+
 
     const type =
-        $("transactionTypeInput").value;
+        $("transactionTypeInput")
+            .value;
+
 
     const amount =
         number(
-            $("transactionAmountInput").value
+            $("transactionAmountInput")
+                .value
         );
 
+
     const notes =
-        $("transactionNotesInput").value.trim();
+        $("transactionNotesInput")
+            .value
+            .trim();
 
 
     if (!employeeId) {
@@ -1417,7 +1623,8 @@ function editTransaction(id) {
 
     const transaction =
         transactions.find(
-            item => item.id === id
+            item =>
+                item.id === id
         );
 
 
@@ -1437,14 +1644,23 @@ function editTransaction(id) {
 
             <option
                 value="${employee.id}"
-                ${employee.id === transaction.employeeId
-                    ? "selected"
-                    : ""}
+                ${
+                    employee.id ===
+                    transaction.employeeId
+                        ? "selected"
+                        : ""
+                }
             >
 
-                ${escapeHTML(employee.id)}
+                ${escapeHTML(
+                    employee.id
+                )}
+
                 -
-                ${escapeHTML(employee.name)}
+
+                ${escapeHTML(
+                    employee.name
+                )}
 
             </option>
 
@@ -1479,7 +1695,9 @@ function editTransaction(id) {
                 <input
                     type="date"
                     id="editTransactionDate"
-                    value="${escapeHTML(transaction.date)}"
+                    value="${escapeHTML(
+                        transaction.date
+                    )}"
                     required
                 >
 
@@ -1497,46 +1715,60 @@ function editTransaction(id) {
 
                     <option
                         value="salary"
-                        ${transaction.type === "salary" ||
-                          transaction.type === "salary_payment"
-                            ? "selected"
-                            : ""}
+                        ${
+                            transaction.type === "salary" ||
+                            transaction.type === "salary_payment"
+                                ? "selected"
+                                : ""
+                        }
                     >
                         Salary Payment
                     </option>
 
+
                     <option
                         value="advance"
-                        ${transaction.type === "advance"
-                            ? "selected"
-                            : ""}
+                        ${
+                            transaction.type === "advance"
+                                ? "selected"
+                                : ""
+                        }
                     >
                         Advance
                     </option>
 
+
                     <option
                         value="loan"
-                        ${transaction.type === "loan"
-                            ? "selected"
-                            : ""}
+                        ${
+                            transaction.type === "loan"
+                                ? "selected"
+                                : ""
+                        }
                     >
                         Loan Given
                     </option>
 
+
                     <option
                         value="loan_repayment"
-                        ${transaction.type === "loan_repayment"
-                            ? "selected"
-                            : ""}
+                        ${
+                            transaction.type === "loan_repayment"
+                                ? "selected"
+                                : ""
+                        }
                     >
                         Loan Repayment
                     </option>
 
+
                     <option
                         value="adjustment"
-                        ${transaction.type === "adjustment"
-                            ? "selected"
-                            : ""}
+                        ${
+                            transaction.type === "adjustment"
+                                ? "selected"
+                                : ""
+                        }
                     >
                         Other Adjustment
                     </option>
@@ -1553,7 +1785,9 @@ function editTransaction(id) {
                 <input
                     type="number"
                     id="editTransactionAmount"
-                    value="${number(transaction.amount)}"
+                    value="${number(
+                        transaction.amount
+                    )}"
                     min="0"
                     step="0.01"
                     required
@@ -1588,6 +1822,7 @@ function editTransaction(id) {
                 Cancel
             </button>
 
+
             <button
                 type="submit"
                 class="primary"
@@ -1620,7 +1855,8 @@ function updateTransaction(id) {
 
     const transaction =
         transactions.find(
-            item => item.id === id
+            item =>
+                item.id === id
         );
 
 
@@ -1628,21 +1864,31 @@ function updateTransaction(id) {
 
 
     const employeeId =
-        $("editTransactionEmployee").value;
+        $("editTransactionEmployee")
+            .value;
+
 
     const date =
-        $("editTransactionDate").value;
+        $("editTransactionDate")
+            .value;
+
 
     const type =
-        $("editTransactionType").value;
+        $("editTransactionType")
+            .value;
+
 
     const amount =
         number(
-            $("editTransactionAmount").value
+            $("editTransactionAmount")
+                .value
         );
 
+
     const notes =
-        $("editTransactionNotes").value.trim();
+        $("editTransactionNotes")
+            .value
+            .trim();
 
 
     if (!employeeId) {
@@ -1678,29 +1924,29 @@ function updateTransaction(id) {
     }
 
 
-    /*
-       UPDATE THE EXISTING TRANSACTION
-       INSTEAD OF CREATING A NEW ONE.
-    */
-
-
     transaction.employeeId =
         employeeId;
+
 
     transaction.date =
         date;
 
+
     transaction.month =
         date.substring(0, 7);
+
 
     transaction.type =
         type;
 
+
     transaction.amount =
         amount;
 
+
     transaction.notes =
         notes;
+
 
     transaction.updatedAt =
         new Date().toISOString();
@@ -1783,15 +2029,22 @@ function populateEmployeeDropdowns() {
             All Employees
         </option>
 
+
         ${employees.map(employee => `
 
             <option
                 value="${employee.id}"
             >
 
-                ${escapeHTML(employee.id)}
+                ${escapeHTML(
+                    employee.id
+                )}
+
                 -
-                ${escapeHTML(employee.name)}
+
+                ${escapeHTML(
+                    employee.name
+                )}
 
             </option>
 
@@ -1807,7 +2060,8 @@ function populateEmployeeDropdowns() {
         )
     ) {
 
-        dropdown.value = current;
+        dropdown.value =
+            current;
 
     }
 
@@ -1846,48 +2100,52 @@ function renderTransactions() {
 
 
     let filtered =
-        transactions.filter(transaction => {
+        transactions.filter(
+            transaction => {
 
-            if (
-                month &&
-                transaction.month !== month
-            ) {
+                if (
+                    month &&
+                    transaction.month !== month
+                ) {
 
-                return false;
+                    return false;
+
+                }
+
+
+                if (
+                    employeeID &&
+                    transaction.employeeId !==
+                    employeeID
+                ) {
+
+                    return false;
+
+                }
+
+
+                if (
+                    type &&
+                    transaction.type !== type
+                ) {
+
+                    return false;
+
+                }
+
+
+                return true;
 
             }
-
-
-            if (
-                employeeID &&
-                transaction.employeeId !== employeeID
-            ) {
-
-                return false;
-
-            }
-
-
-            if (
-                type &&
-                transaction.type !== type
-            ) {
-
-                return false;
-
-            }
-
-
-            return true;
-
-        });
+        );
 
 
     filtered.sort(
         (a, b) =>
-            String(b.date).localeCompare(
-                String(a.date)
-            )
+            String(b.date)
+                .localeCompare(
+                    String(a.date)
+                )
     );
 
 
@@ -1900,7 +2158,7 @@ function renderTransactions() {
                 <tr>
 
                     <td
-                        colspan="7"
+                        colspan="6"
                         class="empty"
                     >
                         No transactions found.
@@ -1998,7 +2256,8 @@ function renderTransactions() {
                         <td>
 
                             ${escapeHTML(
-                                transaction.notes || "-"
+                                transaction.notes ||
+                                "-"
                             )}
 
                         </td>
@@ -2124,6 +2383,10 @@ if ($("addLeaveBtn")) {
 }
 
 
+/* =====================================================
+   OPEN LEAVE MODAL
+===================================================== */
+
 function openLeaveModal() {
 
     if (!employees.length) {
@@ -2140,11 +2403,19 @@ function openLeaveModal() {
     const options =
         employees.map(employee => `
 
-            <option value="${employee.id}">
+            <option
+                value="${employee.id}"
+            >
 
-                ${escapeHTML(employee.id)}
+                ${escapeHTML(
+                    employee.id
+                )}
+
                 -
-                ${escapeHTML(employee.name)}
+
+                ${escapeHTML(
+                    employee.name
+                )}
 
             </option>
 
@@ -2178,12 +2449,11 @@ function openLeaveModal() {
 
             <div class="form-field">
 
-                <label>Start Date *</label>
+                <label>Start Date</label>
 
                 <input
                     type="date"
                     id="leaveStart"
-                    required
                 >
 
             </div>
@@ -2201,6 +2471,21 @@ function openLeaveModal() {
             </div>
 
 
+            <div class="form-field">
+
+                <label>Number of Days</label>
+
+                <input
+                    type="number"
+                    id="leaveDays"
+                    min="0"
+                    step="1"
+                    placeholder="Optional"
+                >
+
+            </div>
+
+
             <div class="form-field full">
 
                 <label>Reason</label>
@@ -2208,7 +2493,19 @@ function openLeaveModal() {
                 <textarea
                     id="leaveReason"
                     rows="3"
+                    placeholder="Optional"
                 ></textarea>
+
+            </div>
+
+
+            <div class="form-field full">
+
+                <small>
+                    Date and number of days are optional.
+                    You can simply record the employee
+                    as being on leave.
+                </small>
 
             </div>
 
@@ -2224,6 +2521,7 @@ function openLeaveModal() {
             >
                 Cancel
             </button>
+
 
             <button
                 type="submit"
@@ -2249,25 +2547,53 @@ function openLeaveModal() {
 }
 
 
+/* =====================================================
+   ADD LEAVE
+===================================================== */
+
 function addLeave() {
 
     const employeeId =
-        $("leaveEmployee").value;
+        $("leaveEmployee")
+            .value;
+
 
     const startDate =
-        $("leaveStart").value;
+        $("leaveStart")
+            .value;
+
 
     const endDate =
-        $("leaveEnd").value;
+        $("leaveEnd")
+            .value;
+
+
+    const daysInput =
+        $("leaveDays")
+            ? $("leaveDays").value
+            : "";
+
+
+    const days =
+        daysInput === ""
+            ? null
+            : number(daysInput);
+
 
     const reason =
-        $("leaveReason").value.trim();
+        $("leaveReason")
+            .value
+            .trim();
 
 
-    if (!employeeId || !startDate) {
+    /*
+       ONLY EMPLOYEE IS REQUIRED.
+    */
+
+    if (!employeeId) {
 
         alert(
-            "Please select an employee and start date."
+            "Please select an employee."
         );
 
         return;
@@ -2275,13 +2601,37 @@ function addLeave() {
     }
 
 
+    /*
+       DATE VALIDATION ONLY IF
+       BOTH DATES ARE PROVIDED.
+    */
+
     if (
+        startDate &&
         endDate &&
         endDate < startDate
     ) {
 
         alert(
             "End date cannot be before start date."
+        );
+
+        return;
+
+    }
+
+
+    /*
+       NUMBER OF DAYS IS OPTIONAL.
+    */
+
+    if (
+        days !== null &&
+        days < 0
+    ) {
+
+        alert(
+            "Number of days cannot be negative."
         );
 
         return;
@@ -2296,9 +2646,13 @@ function addLeave() {
 
         employeeId,
 
-        startDate,
+        startDate:
+            startDate || "",
 
-        endDate,
+        endDate:
+            endDate || "",
+
+        days,
 
         reason,
 
@@ -2343,7 +2697,7 @@ function renderLeave() {
                 <tr>
 
                     <td
-                        colspan="6"
+                        colspan="7"
                         class="empty"
                     >
                         No leave records found.
@@ -2363,10 +2717,13 @@ function renderLeave() {
     const records =
         [...leaveRecords].sort(
             (a, b) =>
-                String(b.startDate)
-                    .localeCompare(
-                        String(a.startDate)
+                String(
+                    b.startDate || ""
+                ).localeCompare(
+                    String(
+                        a.startDate || ""
                     )
+                )
         );
 
 
@@ -2379,6 +2736,7 @@ function renderLeave() {
                 <th>Employee</th>
                 <th>Start Date</th>
                 <th>End Date</th>
+                <th>Days</th>
                 <th>Reason</th>
                 <th>Status</th>
                 <th>Actions</th>
@@ -2400,9 +2758,24 @@ function renderLeave() {
                     );
 
 
-                const active =
-                    !record.endDate ||
-                    record.endDate >= today();
+                const hasDates =
+                    Boolean(
+                        record.startDate ||
+                        record.endDate
+                    );
+
+
+                let active = true;
+
+
+                if (
+                    record.endDate &&
+                    record.endDate < today()
+                ) {
+
+                    active = false;
+
+                }
 
 
                 return `
@@ -2429,24 +2802,53 @@ function renderLeave() {
 
 
                         <td>
-                            ${escapeHTML(
+
+                            ${
                                 record.startDate
-                            )}
+                                    ? escapeHTML(
+                                        record.startDate
+                                      )
+                                    : "-"
+                            }
+
                         </td>
 
 
                         <td>
-                            ${escapeHTML(
-                                record.endDate ||
-                                "Open"
-                            )}
+
+                            ${
+                                record.endDate
+                                    ? escapeHTML(
+                                        record.endDate
+                                      )
+                                    : "-"
+                            }
+
                         </td>
 
 
                         <td>
+
+                            ${
+                                record.days !== null &&
+                                record.days !== undefined &&
+                                record.days !== ""
+                                    ? escapeHTML(
+                                        record.days
+                                      )
+                                    : "-"
+                            }
+
+                        </td>
+
+
+                        <td>
+
                             ${escapeHTML(
-                                record.reason || "-"
+                                record.reason ||
+                                "-"
                             )}
+
                         </td>
 
 
@@ -2459,9 +2861,13 @@ function renderLeave() {
                             }">
 
                                 ${
-                                    active
-                                        ? "On Leave"
-                                        : "Completed"
+                                    hasDates
+                                        ? (
+                                            active
+                                                ? "On Leave"
+                                                : "Completed"
+                                          )
+                                        : "On Leave"
                                 }
 
                             </span>
@@ -2470,6 +2876,14 @@ function renderLeave() {
 
 
                         <td>
+
+                            <button
+                                class="action-btn"
+                                onclick="editLeave('${record.id}')"
+                            >
+                                Edit
+                            </button>
+
 
                             <button
                                 class="action-btn"
@@ -2489,6 +2903,299 @@ function renderLeave() {
         </tbody>
 
     `;
+
+}
+
+
+/* =====================================================
+   EDIT LEAVE
+===================================================== */
+
+function editLeave(id) {
+
+    const record =
+        leaveRecords.find(
+            item =>
+                item.id === id
+        );
+
+
+    if (!record) return;
+
+
+    const options =
+        employees.map(employee => `
+
+            <option
+                value="${employee.id}"
+                ${
+                    employee.id ===
+                    record.employeeId
+                        ? "selected"
+                        : ""
+                }
+            >
+
+                ${escapeHTML(
+                    employee.id
+                )}
+
+                -
+
+                ${escapeHTML(
+                    employee.name
+                )}
+
+            </option>
+
+        `).join("");
+
+
+    openModal(
+        "Edit Staff Leave",
+        `
+        <div class="form-grid">
+
+            <div class="form-field">
+
+                <label>Employee *</label>
+
+                <select
+                    id="editLeaveEmployee"
+                    required
+                >
+
+                    ${options}
+
+                </select>
+
+            </div>
+
+
+            <div class="form-field">
+
+                <label>Start Date</label>
+
+                <input
+                    type="date"
+                    id="editLeaveStart"
+                    value="${escapeHTML(
+                        record.startDate || ""
+                    )}"
+                >
+
+            </div>
+
+
+            <div class="form-field">
+
+                <label>End Date</label>
+
+                <input
+                    type="date"
+                    id="editLeaveEnd"
+                    value="${escapeHTML(
+                        record.endDate || ""
+                    )}"
+                >
+
+            </div>
+
+
+            <div class="form-field">
+
+                <label>Number of Days</label>
+
+                <input
+                    type="number"
+                    id="editLeaveDays"
+                    min="0"
+                    step="1"
+                    value="${
+                        record.days !== null &&
+                        record.days !== undefined
+                            ? record.days
+                            : ""
+                    }"
+                    placeholder="Optional"
+                >
+
+            </div>
+
+
+            <div class="form-field full">
+
+                <label>Reason</label>
+
+                <textarea
+                    id="editLeaveReason"
+                    rows="3"
+                    placeholder="Optional"
+                >${escapeHTML(
+                    record.reason || ""
+                )}</textarea>
+
+            </div>
+
+        </div>
+
+
+        <div class="form-actions">
+
+            <button
+                type="button"
+                class="action-btn"
+                onclick="closeModal()"
+            >
+                Cancel
+            </button>
+
+
+            <button
+                type="submit"
+                class="primary"
+            >
+                Update Leave
+            </button>
+
+        </div>
+        `
+    );
+
+
+    $("modalForm").onsubmit =
+        function(event) {
+
+            event.preventDefault();
+
+            updateLeave(id);
+
+        };
+
+}
+
+
+/* =====================================================
+   UPDATE LEAVE
+===================================================== */
+
+function updateLeave(id) {
+
+    const record =
+        leaveRecords.find(
+            item =>
+                item.id === id
+        );
+
+
+    if (!record) return;
+
+
+    const employeeId =
+        $("editLeaveEmployee")
+            .value;
+
+
+    const startDate =
+        $("editLeaveStart")
+            .value;
+
+
+    const endDate =
+        $("editLeaveEnd")
+            .value;
+
+
+    const daysValue =
+        $("editLeaveDays")
+            .value;
+
+
+    const days =
+        daysValue === ""
+            ? null
+            : number(daysValue);
+
+
+    const reason =
+        $("editLeaveReason")
+            .value
+            .trim();
+
+
+    if (!employeeId) {
+
+        alert(
+            "Please select an employee."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        startDate &&
+        endDate &&
+        endDate < startDate
+    ) {
+
+        alert(
+            "End date cannot be before start date."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        days !== null &&
+        days < 0
+    ) {
+
+        alert(
+            "Number of days cannot be negative."
+        );
+
+        return;
+
+    }
+
+
+    record.employeeId =
+        employeeId;
+
+
+    record.startDate =
+        startDate || "";
+
+
+    record.endDate =
+        endDate || "";
+
+
+    record.days =
+        days;
+
+
+    record.reason =
+        reason;
+
+
+    record.updatedAt =
+        new Date().toISOString();
+
+
+    saveLeave();
+
+    closeModal();
+
+    renderLeave();
+
+    renderDashboard();
+
+    renderReport();
 
 }
 
@@ -2529,7 +3236,7 @@ function deleteLeave(id) {
 
 
 /* =====================================================
-   DASHBOARD
+   DASHBOARD MONTH
 ===================================================== */
 
 if ($("dashboardMonth")) {
@@ -2547,12 +3254,18 @@ if ($("dashboardMonth")) {
 }
 
 
+/* =====================================================
+   DASHBOARD
+===================================================== */
+
 function renderDashboard() {
 
     const month =
         $("dashboardMonth")
-            ? $("dashboardMonth").value ||
-              currentMonth()
+            ? (
+                $("dashboardMonth").value ||
+                currentMonth()
+              )
             : currentMonth();
 
 
@@ -2579,14 +3292,19 @@ function renderDashboard() {
         totalSalary +=
             details.salary;
 
+
         totalPaid +=
             details.paid;
+
 
         totalPending +=
             details.pending;
 
+
         totalFood +=
-            getEmployeeFood(employee);
+            getEmployeeFood(
+                employee
+            );
 
 
         if (
@@ -2650,66 +3368,98 @@ function renderDashboard() {
 
 
     if ($("statEmployees")) {
-        $("statEmployees").textContent =
+
+        $("statEmployees")
+            .textContent =
             employees.length;
+
     }
 
 
     if ($("statSalaries")) {
-        $("statSalaries").textContent =
+
+        $("statSalaries")
+            .textContent =
             money(totalSalary);
+
     }
 
 
     if ($("statPaid")) {
-        $("statPaid").textContent =
+
+        $("statPaid")
+            .textContent =
             money(totalPaid);
+
     }
 
 
     if ($("statPending")) {
-        $("statPending").textContent =
+
+        $("statPending")
+            .textContent =
             money(totalPending);
+
     }
 
 
     if ($("statFood")) {
-        $("statFood").textContent =
+
+        $("statFood")
+            .textContent =
             money(totalFood);
+
     }
 
 
     if ($("statLoans")) {
-        $("statLoans").textContent =
+
+        $("statLoans")
+            .textContent =
             money(totalLoans);
+
     }
 
 
     if ($("statLeave")) {
-        $("statLeave").textContent =
+
+        $("statLeave")
+            .textContent =
             onLeave;
+
     }
 
 
     if ($("statFullyPaid")) {
-        $("statFullyPaid").textContent =
+
+        $("statFullyPaid")
+            .textContent =
             fullyPaid;
+
     }
 
 
     if ($("statPartiallyPaid")) {
-        $("statPartiallyPaid").textContent =
+
+        $("statPartiallyPaid")
+            .textContent =
             partiallyPaid;
+
     }
 
 
     if ($("statPendingEmployees")) {
-        $("statPendingEmployees").textContent =
+
+        $("statPendingEmployees")
+            .textContent =
             pendingEmployees;
+
     }
 
 
-    renderDashboardTable(month);
+    renderDashboardTable(
+        month
+    );
 
 }
 
@@ -2867,10 +3617,10 @@ function renderDashboardTable(month) {
 
                         <td>
 
-                            <span class="status ${statusClass}">
-
+                            <span
+                                class="status ${statusClass}"
+                            >
                                 ${details.status}
-
                             </span>
 
                         </td>
@@ -2900,7 +3650,7 @@ function renderDashboardTable(month) {
 
 
 /* =====================================================
-   REPORT
+   REPORT MONTH
 ===================================================== */
 
 if ($("reportMonth")) {
@@ -2917,6 +3667,10 @@ if ($("reportMonth")) {
 
 }
 
+
+/* =====================================================
+   REPORT ROWS
+===================================================== */
 
 function getReportRows(month) {
 
@@ -2946,7 +3700,9 @@ function getReportRows(month) {
                 details.status,
 
             food:
-                getEmployeeFood(employee),
+                getEmployeeFood(
+                    employee
+                ),
 
             onLeave:
                 isEmployeeOnLeave(
@@ -2961,22 +3717,35 @@ function getReportRows(month) {
 }
 
 
+/* =====================================================
+   RENDER REPORT
+===================================================== */
+
 function renderReport() {
 
     const month =
         $("reportMonth")
-            ? $("reportMonth").value ||
-              currentMonth()
+            ? (
+                $("reportMonth").value ||
+                currentMonth()
+              )
             : currentMonth();
 
 
     const rows =
-        getReportRows(month);
+        getReportRows(
+            month
+        );
 
 
-    renderReportSummary(rows);
+    renderReportSummary(
+        rows
+    );
 
-    renderReportTable(rows);
+
+    renderReportTable(
+        rows
+    );
 
 }
 
@@ -2997,7 +3766,8 @@ function renderReportSummary(rows) {
     const salary =
         rows.reduce(
             (total, row) =>
-                total + row.salary,
+                total +
+                row.salary,
             0
         );
 
@@ -3005,7 +3775,8 @@ function renderReportSummary(rows) {
     const paid =
         rows.reduce(
             (total, row) =>
-                total + row.paid,
+                total +
+                row.paid,
             0
         );
 
@@ -3013,7 +3784,8 @@ function renderReportSummary(rows) {
     const pending =
         rows.reduce(
             (total, row) =>
-                total + row.pending,
+                total +
+                row.pending,
             0
         );
 
@@ -3021,7 +3793,8 @@ function renderReportSummary(rows) {
     const food =
         rows.reduce(
             (total, row) =>
-                total + row.food,
+                total +
+                row.food,
             0
         );
 
@@ -3052,44 +3825,93 @@ function renderReportSummary(rows) {
     summary.innerHTML = `
 
         <div class="summary-box">
-            <span>Total Salary</span>
-            <strong>${money(salary)}</strong>
+
+            <span>
+                Total Salary
+            </span>
+
+            <strong>
+                ${money(salary)}
+            </strong>
+
         </div>
 
 
         <div class="summary-box">
-            <span>Salary Paid</span>
-            <strong>${money(paid)}</strong>
+
+            <span>
+                Salary Paid
+            </span>
+
+            <strong>
+                ${money(paid)}
+            </strong>
+
         </div>
 
 
         <div class="summary-box">
-            <span>Pending Salary</span>
-            <strong>${money(pending)}</strong>
+
+            <span>
+                Pending Salary
+            </span>
+
+            <strong>
+                ${money(pending)}
+            </strong>
+
         </div>
 
 
         <div class="summary-box">
-            <span>Food Allowance</span>
-            <strong>${money(food)}</strong>
+
+            <span>
+                Food Allowance
+            </span>
+
+            <strong>
+                ${money(food)}
+            </strong>
+
         </div>
 
 
         <div class="summary-box">
-            <span>Fully Paid</span>
-            <strong>${fullyPaid}</strong>
+
+            <span>
+                Fully Paid
+            </span>
+
+            <strong>
+                ${fullyPaid}
+            </strong>
+
         </div>
 
 
         <div class="summary-box">
-            <span>Partially Paid</span>
-            <strong>${partial}</strong>
+
+            <span>
+                Partially Paid
+            </span>
+
+            <strong>
+                ${partial}
+            </strong>
+
         </div>
 
 
         <div class="summary-box">
-            <span>Pending Employees</span>
-            <strong>${pendingCount}</strong>
+
+            <span>
+                Pending Employees
+            </span>
+
+            <strong>
+                ${pendingCount}
+            </strong>
+
         </div>
 
     `;
@@ -3191,11 +4013,13 @@ function renderReportTable(rows) {
                     >
 
                         <td>
+
                             <strong>
                                 ${escapeHTML(
                                     row.employee.id
                                 )}
                             </strong>
+
                         </td>
 
 
@@ -3207,30 +4031,42 @@ function renderReportTable(rows) {
 
 
                         <td>
-                            ${money(row.salary)}
+                            ${money(
+                                row.salary
+                            )}
                         </td>
 
 
                         <td>
-                            ${money(row.paid)}
+                            ${money(
+                                row.paid
+                            )}
                         </td>
 
 
                         <td>
+
                             <strong>
-                                ${money(row.pending)}
+                                ${money(
+                                    row.pending
+                                )}
                             </strong>
+
                         </td>
 
 
                         <td>
-                            ${money(row.food)}
+                            ${money(
+                                row.food
+                            )}
                         </td>
 
 
                         <td>
 
-                            <span class="status ${statusClass}">
+                            <span
+                                class="status ${statusClass}"
+                            >
                                 ${escapeHTML(
                                     row.status
                                 )}
@@ -3262,10 +4098,16 @@ function renderReportTable(rows) {
 }
 
 
+/* =====================================================
+   REPORT STATUS
+===================================================== */
+
 function getPrintStatus(row) {
 
     if (row.onLeave) {
+
         return "leave";
+
     }
 
 
@@ -3273,7 +4115,9 @@ function getPrintStatus(row) {
         row.status ===
         "Fully Paid"
     ) {
+
         return "paid";
+
     }
 
 
@@ -3281,14 +4125,18 @@ function getPrintStatus(row) {
         row.status ===
         "Partially Paid"
     ) {
+
         return "partial";
+
     }
 
 
     if (
         row.pending > 0
     ) {
+
         return "pending";
+
     }
 
 
@@ -3298,19 +4146,8 @@ function getPrintStatus(row) {
 
 
 /* =====================================================
-   PRINTING
+   PRINT FILTER
 ===================================================== */
-
-if ($("printReportBtn")) {
-
-    $("printReportBtn")
-        .addEventListener(
-            "click",
-            printReport
-        );
-
-}
-
 
 function getSelectedPrintFilter() {
 
@@ -3357,12 +4194,29 @@ function getPrintFilterName(filter) {
 }
 
 
+/* =====================================================
+   PRINT REPORT
+===================================================== */
+
+if ($("printReportBtn")) {
+
+    $("printReportBtn")
+        .addEventListener(
+            "click",
+            printReport
+        );
+
+}
+
+
 function printReport() {
 
     const month =
         $("reportMonth")
-            ? $("reportMonth").value ||
-              currentMonth()
+            ? (
+                $("reportMonth").value ||
+                currentMonth()
+              )
             : currentMonth();
 
 
@@ -3371,13 +4225,19 @@ function printReport() {
 
 
     const rows =
-        getReportRows(month);
+        getReportRows(
+            month
+        );
 
 
-    let filteredRows = rows;
+    let filteredRows =
+        rows;
 
 
-    if (filter === "pending") {
+    if (
+        filter ===
+        "pending"
+    ) {
 
         filteredRows =
             rows.filter(
@@ -3388,7 +4248,10 @@ function printReport() {
     }
 
 
-    if (filter === "partial") {
+    if (
+        filter ===
+        "partial"
+    ) {
 
         filteredRows =
             rows.filter(
@@ -3400,7 +4263,10 @@ function printReport() {
     }
 
 
-    if (filter === "paid") {
+    if (
+        filter ===
+        "paid"
+    ) {
 
         filteredRows =
             rows.filter(
@@ -3412,7 +4278,10 @@ function printReport() {
     }
 
 
-    if (filter === "leave") {
+    if (
+        filter ===
+        "leave"
+    ) {
 
         filteredRows =
             rows.filter(
@@ -3425,7 +4294,8 @@ function printReport() {
 
     if ($("printMonth")) {
 
-        $("printMonth").textContent =
+        $("printMonth")
+            .textContent =
             "Month: " +
             formatMonth(month);
 
@@ -3434,9 +4304,12 @@ function printReport() {
 
     if ($("printFilter")) {
 
-        $("printFilter").textContent =
+        $("printFilter")
+            .textContent =
             "Report: " +
-            getPrintFilterName(filter);
+            getPrintFilterName(
+                filter
+            );
 
     }
 
@@ -3557,8 +4430,12 @@ function formatMonth(month) {
         month.split("-");
 
 
-    if (parts.length !== 2) {
+    if (
+        parts.length !== 2
+    ) {
+
         return month;
+
     }
 
 
@@ -3593,14 +4470,19 @@ function openModal(
     const modal =
         $("modal");
 
+
     const modalTitle =
         $("modalTitle");
+
 
     const form =
         $("modalForm");
 
 
-    if (!modal || !form) {
+    if (
+        !modal ||
+        !form
+    ) {
 
         alert(
             "Modal elements are missing from index.html."
