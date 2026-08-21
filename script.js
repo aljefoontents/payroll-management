@@ -2,7 +2,7 @@
    AL JEFOON TENTS
    PAYROLL SYSTEM
    SCRIPT.JS
-   VERSION 2.3
+   VERSION 2.4
 
    FEATURES:
    - Employee IDs start at EMP003
@@ -16,6 +16,7 @@
    - Employees on leave excluded from salary and food
    - Employees on leave shown as ON LEAVE
    - Previous month pending salaries shown in reports
+   - Previous month pending salaries shown on dashboard
    - Dark mode
 ===================================================== */
 
@@ -276,6 +277,13 @@ function isEmployeeOnLeave(
     employee,
     month
 ) {
+
+    if (!employee) {
+
+        return false;
+
+    }
+
 
     return state.leaves.some(
         leave => {
@@ -916,7 +924,6 @@ function payrollFor(
 
 /* =====================================================
    PREVIOUS MONTH PENDING SALARY
-=====================================================
 
    Finds unpaid salary from all months before
    the selected report month.
@@ -1206,20 +1213,24 @@ function getEmployeesOnLeave(month) {
             return;
 
 
-        if (leave.startDate) {
+        const employee =
+            getEmployee(
+                leave.employeeId
+            );
 
-            if (
-                !isEmployeeOnLeave(
-                    getEmployee(
-                        leave.employeeId
-                    ),
-                    month
-                )
-            ) {
 
-                return;
+        if (!employee)
+            return;
 
-            }
+
+        if (
+            !isEmployeeOnLeave(
+                employee,
+                month
+            )
+        ) {
+
+            return;
 
         }
 
@@ -1551,6 +1562,45 @@ function renderDashboard() {
         );
 
 
+    /*
+       PREVIOUS MONTH PENDING SALARIES
+       FOR DASHBOARD
+    */
+
+    const previousPendingRows =
+        state.employees
+            .map(
+                employee => ({
+
+                    employee,
+
+                    pending:
+                        getPreviousPendingSalary(
+                            employee,
+                            month
+                        )
+
+                })
+            )
+            .filter(
+                row =>
+                    row.pending > 0
+            );
+
+
+    const totalPreviousPending =
+        previousPendingRows.reduce(
+            (
+                total,
+                row
+            ) =>
+                total +
+                row.pending,
+
+            0
+        );
+
+
     const totalLoans =
         state.employees.reduce(
             (
@@ -1619,6 +1669,17 @@ function renderDashboard() {
             money(totalPending);
 
 
+    /*
+       If the HTML already contains a
+       Previous Pending dashboard card,
+       automatically populate it.
+    */
+
+    if ($("statPreviousPending"))
+        $("statPreviousPending").textContent =
+            money(totalPreviousPending);
+
+
     if ($("statLoans"))
         $("statLoans").textContent =
             money(totalLoans);
@@ -1647,6 +1708,171 @@ function renderDashboard() {
     if ($("statFood"))
         $("statFood").textContent =
             money(totalFood);
+
+
+    /*
+       =================================================
+       PREVIOUS SALARY PENDING DASHBOARD SECTION
+       =================================================
+    */
+
+    const dashboardPreviousPendingHTML = `
+
+        <div
+            id="dashboardPreviousPending"
+            class="previous-pending-section"
+            style="
+                margin-top:20px;
+                margin-bottom:20px;
+            "
+        >
+
+            <h3>
+                Previous Salary Pending
+            </h3>
+
+            ${
+                previousPendingRows.length
+
+                    ?
+
+                `
+
+                    <div
+                        style="
+                            overflow-x:auto;
+                        "
+                    >
+
+                        <table
+                            class="report-table"
+                            style="width:100%;"
+                        >
+
+                            <thead>
+
+                                <tr>
+
+                                    <th>
+                                        Employee
+                                    </th>
+
+                                    <th class="num">
+                                        Previous Salary Pending
+                                    </th>
+
+                                </tr>
+
+                            </thead>
+
+                            <tbody>
+
+                                ${
+                                    previousPendingRows
+                                        .map(
+                                            row => `
+
+                                                <tr>
+
+                                                    <td>
+
+                                                        <b>
+                                                            ${escapeHTML(
+                                                                row.employee.id
+                                                            )}
+                                                        </b>
+
+                                                        -
+
+                                                        ${escapeHTML(
+                                                            row.employee.name
+                                                        )}
+
+                                                    </td>
+
+                                                    <td class="num">
+
+                                                        <b>
+                                                            ${money(
+                                                                row.pending
+                                                            )}
+                                                        </b>
+
+                                                    </td>
+
+                                                </tr>
+
+                                            `
+                                        )
+                                        .join("")
+                                }
+
+                            </tbody>
+
+                            <tfoot>
+
+                                <tr>
+
+                                    <th>
+                                        Total Previous Pending
+                                    </th>
+
+                                    <th class="num">
+                                        ${money(
+                                            totalPreviousPending
+                                        )}
+                                    </th>
+
+                                </tr>
+
+                            </tfoot>
+
+                        </table>
+
+                    </div>
+
+                `
+
+                    :
+
+                `
+
+                    <div
+                        class="empty"
+                        style="
+                            padding:15px;
+                        "
+                    >
+                        No previous salary pending.
+                    </div>
+
+                `
+            }
+
+        </div>
+
+    `;
+
+
+    const existingDashboardPreviousPending =
+        document.getElementById(
+            "dashboardPreviousPending"
+        );
+
+
+    if (existingDashboardPreviousPending) {
+
+        existingDashboardPreviousPending.outerHTML =
+            dashboardPreviousPendingHTML;
+
+    } else if ($("dashboardTable")) {
+
+        $("dashboardTable").insertAdjacentHTML(
+            "beforebegin",
+            dashboardPreviousPendingHTML
+        );
+
+    }
 
 
     if (!$("dashboardTable"))
@@ -1679,6 +1905,10 @@ function renderDashboard() {
                     Pending Salary
                 </th>
 
+                <th class="num">
+                    Previous Pending
+                </th>
+
                 <th>Status</th>
 
                 <th>Leave</th>
@@ -1704,6 +1934,13 @@ function renderDashboard() {
 
                             const row =
                                 payroll[index];
+
+
+                            const previousPending =
+                                getPreviousPendingSalary(
+                                    employee,
+                                    month
+                                );
 
 
                             return `
@@ -1752,6 +1989,26 @@ function renderDashboard() {
                                         </b>
                                     </td>
 
+                                    <td class="num">
+
+                                        ${
+                                            previousPending > 0
+
+                                                ?
+
+                                            `<b>
+                                                ${money(
+                                                    previousPending
+                                                )}
+                                            </b>`
+
+                                                :
+
+                                            "-"
+                                        }
+
+                                    </td>
+
                                     <td>
                                         ${statusHTML(
                                             row.status
@@ -1786,7 +2043,7 @@ function renderDashboard() {
                     <tr>
 
                         <td
-                            colspan="8"
+                            colspan="9"
                             class="empty"
                         >
                             No employees added yet.
@@ -2104,6 +2361,7 @@ function renderTransactions() {
                                     </b>
 
                                     -
+
                                     ${escapeHTML(
                                         employeeName(
                                             transaction.employeeId
@@ -2261,6 +2519,7 @@ function renderLeave() {
                                     </b>
 
                                     -
+
                                     ${escapeHTML(
                                         employeeName(
                                             leave.employeeId
