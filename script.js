@@ -15,19 +15,18 @@ const DARK_MODE_KEY = "alJefoonPayrollDarkMode";
 const DEFAULT_EMPLOYEES = [
 
     /*
+    Add employees here only if you want
+    them preloaded into a fresh installation.
+
+    Example:
+
     {
-        id: "EMP001",
+        id: "AJT001",
         name: "Employee Name",
         salary: 2500,
         food: 300
-    },
-
-    {
-        id: "EMP002",
-        name: "Another Employee",
-        salary: 3000,
-        food: 400
     }
+
     */
 
 ];
@@ -159,18 +158,68 @@ function generateID(prefix) {
 
 
 /* =====================================================
+   AUTO EMPLOYEE ID
+   FORMAT: AJT001, AJT002, AJT003...
+===================================================== */
+
+function getNextEmployeeID() {
+
+    let highestNumber = 0;
+
+
+    state.employees.forEach(employee => {
+
+        const match =
+            String(employee.id || "")
+                .match(/^AJT(\d+)$/i);
+
+
+        if (match) {
+
+            const number =
+                parseInt(
+                    match[1],
+                    10
+                );
+
+
+            if (
+                number > highestNumber
+            ) {
+
+                highestNumber =
+                    number;
+
+            }
+
+        }
+
+    });
+
+
+    return (
+        "AJT" +
+        String(
+            highestNumber + 1
+        ).padStart(3, "0")
+    );
+
+}
+
+
+/* =====================================================
    PAYROLL CALCULATION
 =====================================================
 
-   Monthly Total =
-       Salary + Food Allowance
+Monthly Total =
+Salary + Food Allowance
 
-   Remaining =
-       Monthly Total
-       - Salary Paid
-       - Advances
-       - Loan Repayments
-       - Other Adjustments
+Remaining =
+Monthly Total
+- Salary Paid
+- Advances
+- Loan Repayments
+- Other Adjustments
 
 ===================================================== */
 
@@ -616,9 +665,7 @@ function renderDashboard() {
 
             <tr>
 
-                <th>
-                    Employee
-                </th>
+                <th>Employee</th>
 
                 <th class="num">
                     Salary
@@ -703,32 +750,24 @@ function renderDashboard() {
                                     </td>
 
                                     <td class="num">
-
                                         <b>
                                             ${money(
                                                 row.remaining
                                             )}
                                         </b>
-
                                     </td>
 
                                     <td>
-
                                         ${
                                             row.leaveDays
-
                                                 ?
-
                                             `<span class="status leave">
                                                 ${row.leaveDays}
                                                 day(s)
                                             </span>`
-
                                                 :
-
                                             "-"
                                         }
-
                                     </td>
 
                                 </tr>
@@ -820,9 +859,11 @@ function renderEmployees() {
                             <tr>
 
                                 <td>
-                                    ${escapeHTML(
-                                        employee.id
-                                    )}
+                                    <b>
+                                        ${escapeHTML(
+                                            employee.id
+                                        )}
+                                    </b>
                                 </td>
 
                                 <td>
@@ -1002,29 +1043,19 @@ function renderTransactions() {
 
             <tr>
 
-                <th>
-                    Date
-                </th>
+                <th>Date</th>
 
-                <th>
-                    Employee
-                </th>
+                <th>Employee</th>
 
-                <th>
-                    Type
-                </th>
+                <th>Type</th>
 
                 <th class="num">
                     Amount
                 </th>
 
-                <th>
-                    Note
-                </th>
+                <th>Note</th>
 
-                <th>
-                    Actions
-                </th>
+                <th>Actions</th>
 
             </tr>
 
@@ -1638,6 +1669,10 @@ $("modal").onclick =
 
 function addEmployee() {
 
+    const nextID =
+        getNextEmployeeID();
+
+
     openModal(
 
         "Add Employee",
@@ -1646,6 +1681,7 @@ function addEmployee() {
 
         <div class="form-grid">
 
+
             <div class="form-field">
 
                 <label>
@@ -1653,9 +1689,14 @@ function addEmployee() {
                 </label>
 
                 <input
+                    value="${nextID}"
+                    disabled
+                >
+
+                <input
+                    type="hidden"
                     name="id"
-                    required
-                    placeholder="EMP001"
+                    value="${nextID}"
                 >
 
             </div>
@@ -1670,6 +1711,8 @@ function addEmployee() {
                 <input
                     name="name"
                     required
+                    autofocus
+                    placeholder="Enter employee name"
                 >
 
             </div>
@@ -1709,10 +1752,12 @@ function addEmployee() {
 
             </div>
 
+
         </div>
 
 
         <div class="form-actions">
+
 
             <button
                 type="button"
@@ -1722,11 +1767,14 @@ function addEmployee() {
                 Cancel
             </button>
 
+
             <button
+                type="submit"
                 class="primary"
             >
                 Save Employee
             </button>
+
 
         </div>
 
@@ -1746,20 +1794,31 @@ function addEmployee() {
                     .trim();
 
 
-            if (
-                state.employees.some(
-                    employee =>
-                        employee.id === id
-                )
-            ) {
+            if (!name) {
 
                 alert(
-                    "Employee ID already exists."
+                    "Please enter the employee name."
                 );
 
                 return;
 
             }
+
+
+            const salary =
+                Number(
+                    formData.get(
+                        "salary"
+                    )
+                );
+
+
+            const food =
+                Number(
+                    formData.get(
+                        "food"
+                    )
+                );
 
 
             state.employees.push({
@@ -1768,19 +1827,9 @@ function addEmployee() {
 
                 name,
 
-                salary:
-                    Number(
-                        formData.get(
-                            "salary"
-                        )
-                    ),
+                salary,
 
-                food:
-                    Number(
-                        formData.get(
-                            "food"
-                        )
-                    )
+                food
 
             });
 
@@ -1818,6 +1867,7 @@ function editEmployee(id) {
         `
 
         <div class="form-grid">
+
 
             <div class="form-field">
 
@@ -1887,10 +1937,12 @@ function editEmployee(id) {
 
             </div>
 
+
         </div>
 
 
         <div class="form-actions">
+
 
             <button
                 type="button"
@@ -1900,11 +1952,14 @@ function editEmployee(id) {
                 Cancel
             </button>
 
+
             <button
+                type="submit"
                 class="primary"
             >
                 Save Changes
             </button>
+
 
         </div>
 
@@ -2028,6 +2083,7 @@ function addTransaction() {
 
         <div class="form-grid">
 
+
             <div class="form-field">
 
                 <label>
@@ -2132,10 +2188,12 @@ function addTransaction() {
 
             </div>
 
+
         </div>
 
 
         <div class="form-actions">
+
 
             <button
                 type="button"
@@ -2145,11 +2203,14 @@ function addTransaction() {
                 Cancel
             </button>
 
+
             <button
+                type="submit"
                 class="primary"
             >
                 Save Transaction
             </button>
+
 
         </div>
 
@@ -2265,6 +2326,7 @@ function addLeave() {
 
         <div class="form-grid">
 
+
             <div class="form-field full">
 
                 <label>
@@ -2343,10 +2405,12 @@ function addLeave() {
 
             </div>
 
+
         </div>
 
 
         <div class="form-actions">
+
 
             <button
                 type="button"
@@ -2356,11 +2420,14 @@ function addLeave() {
                 Cancel
             </button>
 
+
             <button
+                type="submit"
                 class="primary"
             >
                 Save Leave
             </button>
+
 
         </div>
 
@@ -2481,13 +2548,6 @@ document
             "click",
             () => {
 
-                /*
-                 * IMPORTANT:
-                 * Do not change the active
-                 * state for the Dark Mode
-                 * button.
-                 */
-
                 if (
                     button.id ===
                     "darkModeBtn"
@@ -2546,7 +2606,30 @@ document
                     $("pageTitle")
                 ) {
 
+                    const titles = {
+
+                        dashboard:
+                            "Payroll Dashboard",
+
+                        employees:
+                            "Employees",
+
+                        transactions:
+                            "Salary / Advances / Loans",
+
+                        leave:
+                            "Staff Leave",
+
+                        reports:
+                            "Monthly Payroll Report"
+
+                    };
+
+
                     $("pageTitle").textContent =
+                        titles[
+                            button.dataset.section
+                        ] ||
                         button.textContent.trim();
 
                 }
@@ -2678,7 +2761,9 @@ function updateDarkModeButton() {
 }
 
 
-function setDarkMode(enabled) {
+function setDarkMode(
+    enabled
+) {
 
     if (enabled) {
 
