@@ -2,7 +2,7 @@
    AL JEFOON TENTS
    PAYROLL SYSTEM
    SCRIPT.JS
-   VERSION 2.2
+   VERSION 2.3
 
    FEATURES:
    - Employee IDs start at EMP003
@@ -13,6 +13,9 @@
    - Leave dates optional
    - Leave days optional
    - Leave counter counts employees with leave records
+   - Employees on leave show ON LEAVE status
+   - Employees on leave have salary and food allowance
+     excluded from monthly payroll reports
    - Dark mode
 ===================================================== */
 
@@ -266,6 +269,287 @@ function getMonthlySalaryPaid(
 
 
 /* =====================================================
+   CHECK IF EMPLOYEE IS ON LEAVE
+   FOR SELECTED MONTH
+===================================================== */
+
+function isEmployeeOnLeave(
+    employee,
+    month
+) {
+
+    return state.leaves.some(
+        leave => {
+
+            if (
+                leave.employeeId !==
+                employee.id
+            ) {
+
+                return false;
+
+            }
+
+
+            /*
+               If there is no start date,
+               keep the existing behaviour and
+               consider the employee on leave.
+            */
+
+            if (!leave.startDate) {
+
+                return true;
+
+            }
+
+
+            /*
+               Start date exists but no end date.
+               The leave applies to the month
+               containing the start date.
+            */
+
+            if (!leave.endDate) {
+
+                return (
+                    monthKey(
+                        leave.startDate
+                    ) === month
+                );
+
+            }
+
+
+            /*
+               Both dates exist.
+               Check whether the leave period
+               overlaps the selected month.
+            */
+
+            const [year, monthNumber] =
+                month.split("-").map(Number);
+
+
+            const daysInMonth =
+                new Date(
+                    year,
+                    monthNumber,
+                    0
+                ).getDate();
+
+
+            const leaveStart =
+                new Date(
+                    leave.startDate +
+                    "T00:00:00"
+                );
+
+
+            const leaveEnd =
+                new Date(
+                    leave.endDate +
+                    "T00:00:00"
+                );
+
+
+            const monthStart =
+                new Date(
+                    year,
+                    monthNumber - 1,
+                    1
+                );
+
+
+            const monthEnd =
+                new Date(
+                    year,
+                    monthNumber - 1,
+                    daysInMonth
+                );
+
+
+            return (
+                leaveStart <= monthEnd &&
+                leaveEnd >= monthStart
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
+   GET LEAVE DAYS FOR SELECTED MONTH
+===================================================== */
+
+function getLeaveDaysForMonth(
+    employee,
+    month
+) {
+
+    const [year, monthNumber] =
+        month.split("-").map(Number);
+
+
+    const daysInMonth =
+        new Date(
+            year,
+            monthNumber,
+            0
+        ).getDate();
+
+
+    const monthStart =
+        new Date(
+            year,
+            monthNumber - 1,
+            1
+        );
+
+
+    const monthEnd =
+        new Date(
+            year,
+            monthNumber - 1,
+            daysInMonth
+        );
+
+
+    let leaveDays = 0;
+
+
+    state.leaves
+        .filter(
+            leave =>
+                leave.employeeId ===
+                employee.id
+        )
+        .forEach(
+            leave => {
+
+                /*
+                   No dates:
+                   use manually entered days.
+                */
+
+                if (!leave.startDate) {
+
+                    leaveDays +=
+                        Number(
+                            leave.days || 0
+                        );
+
+                    return;
+
+                }
+
+
+                /*
+                   Start date but no end date:
+                   use manually entered days if the
+                   start date belongs to this month.
+                */
+
+                if (!leave.endDate) {
+
+                    if (
+                        monthKey(
+                            leave.startDate
+                        ) === month
+                    ) {
+
+                        leaveDays +=
+                            Number(
+                                leave.days || 0
+                            );
+
+                    }
+
+                    return;
+
+                }
+
+
+                const leaveStart =
+                    new Date(
+                        leave.startDate +
+                        "T00:00:00"
+                    );
+
+
+                const leaveEnd =
+                    new Date(
+                        leave.endDate +
+                        "T00:00:00"
+                    );
+
+
+                /*
+                   Ignore leave periods that do not
+                   overlap the selected month.
+                */
+
+                if (
+                    leaveStart > monthEnd ||
+                    leaveEnd < monthStart
+                ) {
+
+                    return;
+
+                }
+
+
+                const actualStart =
+                    leaveStart >
+                    monthStart
+                        ? leaveStart
+                        : monthStart;
+
+
+                const actualEnd =
+                    leaveEnd <
+                    monthEnd
+                        ? leaveEnd
+                        : monthEnd;
+
+
+                if (
+                    actualStart <=
+                    actualEnd
+                ) {
+
+                    const difference =
+                        actualEnd.getTime() -
+                        actualStart.getTime();
+
+
+                    const actualDays =
+                        Math.floor(
+                            difference /
+                            (1000 * 60 * 60 * 24)
+                        ) + 1;
+
+
+                    leaveDays +=
+                        actualDays;
+
+                }
+
+            }
+        );
+
+
+    return Math.min(
+        leaveDays,
+        daysInMonth
+    );
+
+}
+
+
+/* =====================================================
    MONTHLY PAYROLL CALCULATION
 ===================================================== */
 
@@ -273,6 +557,153 @@ function payrollFor(
     employee,
     month
 ) {
+
+    /*
+       CHECK WHETHER EMPLOYEE IS ON LEAVE.
+
+       If the employee is on leave during the
+       selected month, salary and food allowance
+       are completely excluded from the report.
+
+       The employee remains visible with status
+       ON LEAVE.
+    */
+
+    const onLeave =
+        isEmployeeOnLeave(
+            employee,
+            month
+        );
+
+
+    if (onLeave) {
+
+        const leaveDays =
+            getLeaveDaysForMonth(
+                employee,
+                month
+            );
+
+
+        const advances =
+            state.transactions
+                .filter(
+                    transaction =>
+
+                        transaction.employeeId ===
+                        employee.id &&
+
+                        transaction.type ===
+                        "advance" &&
+
+                        monthKey(
+                            transaction.date
+                        ) === month
+                )
+                .reduce(
+                    (
+                        total,
+                        transaction
+                    ) =>
+                        total +
+                        Number(
+                            transaction.amount || 0
+                        ),
+
+                    0
+                );
+
+
+        const loanRepayments =
+            state.transactions
+                .filter(
+                    transaction =>
+
+                        transaction.employeeId ===
+                        employee.id &&
+
+                        transaction.type ===
+                        "loan_repayment" &&
+
+                        monthKey(
+                            transaction.date
+                        ) === month
+                )
+                .reduce(
+                    (
+                        total,
+                        transaction
+                    ) =>
+                        total +
+                        Number(
+                            transaction.amount || 0
+                        ),
+
+                    0
+                );
+
+
+        const adjustments =
+            state.transactions
+                .filter(
+                    transaction =>
+
+                        transaction.employeeId ===
+                        employee.id &&
+
+                        transaction.type ===
+                        "adjustment" &&
+
+                        monthKey(
+                            transaction.date
+                        ) === month
+                )
+                .reduce(
+                    (
+                        total,
+                        transaction
+                    ) =>
+                        total +
+                        Number(
+                            transaction.amount || 0
+                        ),
+
+                    0
+                );
+
+
+        return {
+
+            salary:
+                0,
+
+            food:
+                0,
+
+            salaryDue:
+                0,
+
+            salaryPaid:
+                0,
+
+            pending:
+                0,
+
+            status:
+                "ON LEAVE",
+
+            advances,
+
+            loanRepayments,
+
+            adjustments,
+
+            leaveDays
+
+        };
+
+    }
+
 
     const basicSalary =
         Number(
@@ -880,6 +1311,20 @@ function outstandingLoan(
 function statusHTML(
     status
 ) {
+
+    if (
+        status ===
+        "ON LEAVE"
+    ) {
+
+        return `
+            <span class="status leave">
+                ON LEAVE
+            </span>
+        `;
+
+    }
+
 
     if (
         status ===
