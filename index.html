@@ -123,6 +123,7 @@
             <button
                 class="nav-btn dark-mode-btn"
                 id="darkModeBtn"
+                type="button"
             >
                 Dark Mode
             </button>
@@ -160,11 +161,12 @@
             </div>
 
 
-            <!-- PRINT -->
+            <!-- PRINT CURRENT -->
 
             <button
                 class="primary"
                 id="printCurrentBtn"
+                type="button"
                 onclick="window.print()"
             >
                 Print
@@ -350,6 +352,7 @@
                     <button
                         class="primary"
                         id="addEmployeeBtn"
+                        type="button"
                     >
                         Add Employee
                     </button>
@@ -400,6 +403,7 @@
                     <button
                         class="primary"
                         id="addTransactionBtn"
+                        type="button"
                     >
                         Add Transaction
                     </button>
@@ -522,6 +526,7 @@
                     <button
                         class="primary"
                         id="addLeaveBtn"
+                        type="button"
                     >
                         Record Leave
                     </button>
@@ -561,6 +566,10 @@
             <div class="panel">
 
 
+                <!-- =================================================
+                     REPORT HEADER
+                ================================================== -->
+
                 <div class="panel-head">
 
 
@@ -572,7 +581,9 @@
                     <div class="report-actions">
 
 
-                        <!-- REPORT MONTH -->
+                        <!-- =================================================
+                             REPORT MONTH
+                        ================================================== -->
 
                         <input
                             type="month"
@@ -580,13 +591,67 @@
                         >
 
 
-                        <!-- PRINT REPORT -->
+                        <!-- =================================================
+                             PRINT REPORT TYPE
+                        ================================================== -->
+
+                        <select
+                            id="printReportType"
+                        >
+
+                            <option value="monthly">
+                                Monthly Payroll Report
+                            </option>
+
+                            <option value="pending">
+                                Pending Salaries
+                            </option>
+
+                            <option value="partial">
+                                Partially Paid Salaries
+                            </option>
+
+                            <option value="paid">
+                                Fully Paid Salaries
+                            </option>
+
+                            <option value="leave">
+                                Staff On Leave
+                            </option>
+
+                            <option value="previous_pending">
+                                Previous Pending Salaries
+                            </option>
+
+                            <option value="salary_payments">
+                                Salary Payments
+                            </option>
+
+                            <option value="advances">
+                                Salary Advances
+                            </option>
+
+                            <option value="loans">
+                                Loans
+                            </option>
+
+                            <option value="loan_repayments">
+                                Loan Repayments
+                            </option>
+
+                        </select>
+
+
+                        <!-- =================================================
+                             PRINT BUTTON
+                        ================================================== -->
 
                         <button
                             class="primary"
                             id="printReportBtn"
+                            type="button"
                         >
-                            Print Monthly Report
+                            Print Report
                         </button>
 
 
@@ -597,7 +662,9 @@
 
 
 
-                <!-- REPORT SUMMARY -->
+                <!-- =================================================
+                     REPORT SUMMARY
+                ================================================== -->
 
                 <div
                     id="reportSummary"
@@ -606,7 +673,9 @@
 
 
 
-                <!-- REPORT TABLE -->
+                <!-- =================================================
+                     REPORT TABLE
+                ================================================== -->
 
                 <div class="table-wrap">
 
