@@ -154,7 +154,6 @@
                     Payroll Dashboard
                 </h1>
 
-
                 <div id="clock"></div>
 
             </div>
@@ -293,7 +292,6 @@
 
                 <div class="panel-head">
 
-
                     <h2>
                         Current Month Payroll
                     </h2>
@@ -304,17 +302,14 @@
                         id="dashboardMonth"
                     >
 
-
                 </div>
 
 
                 <div class="table-wrap">
 
-
                     <table
                         id="dashboardTable"
                     ></table>
-
 
                 </div>
 
@@ -341,7 +336,6 @@
 
                 <div class="panel-head">
 
-
                     <h2>
                         Employees
                     </h2>
@@ -354,17 +348,14 @@
                         Add Employee
                     </button>
 
-
                 </div>
 
 
                 <div class="table-wrap">
 
-
                     <table
                         id="employeesTable"
                     ></table>
-
 
                 </div>
 
@@ -391,7 +382,6 @@
 
                 <div class="panel-head">
 
-
                     <h2>
                         Salary / Advances / Loans
                     </h2>
@@ -403,7 +393,6 @@
                     >
                         Add Transaction
                     </button>
-
 
                 </div>
 
@@ -470,7 +459,6 @@
                             Other Adjustment
                         </option>
 
-
                     </select>
 
 
@@ -482,11 +470,9 @@
 
                 <div class="table-wrap">
 
-
                     <table
                         id="transactionsTable"
                     ></table>
-
 
                 </div>
 
@@ -513,7 +499,6 @@
 
                 <div class="panel-head">
 
-
                     <h2>
                         Staff Leave
                     </h2>
@@ -526,17 +511,14 @@
                         Record Leave
                     </button>
 
-
                 </div>
 
 
                 <div class="table-wrap">
 
-
                     <table
                         id="leaveTable"
                     ></table>
-
 
                 </div>
 
@@ -569,6 +551,7 @@
                     </h2>
 
 
+
                     <div class="report-actions">
 
 
@@ -580,13 +563,63 @@
                         >
 
 
-                        <!-- PRINT REPORT -->
+
+                        <!-- =================================================
+                             PRINT OPTIONS
+                        ================================================== -->
+
+                        <select
+                            id="printReportType"
+                            aria-label="Print Report Type"
+                        >
+
+                            <option value="full">
+                                Full Monthly Report
+                            </option>
+
+                            <option value="pending">
+                                Pending Salaries Only
+                            </option>
+
+                            <option value="partial">
+                                Partially Paid Salaries
+                            </option>
+
+                            <option value="paid">
+                                Fully Paid Salaries
+                            </option>
+
+                            <option value="leave">
+                                Staff On Leave
+                            </option>
+
+                            <option value="previous_pending">
+                                Previous Salary Pending
+                            </option>
+
+                            <option value="salary_payments">
+                                Salary Payments
+                            </option>
+
+                            <option value="advances">
+                                Advances
+                            </option>
+
+                            <option value="loans">
+                                Loan Repayments
+                            </option>
+
+                        </select>
+
+
+
+                        <!-- PRINT SELECTED REPORT -->
 
                         <button
                             class="primary"
                             id="printReportBtn"
                         >
-                            Print Monthly Report
+                            Print Selected Report
                         </button>
 
 
@@ -597,7 +630,9 @@
 
 
 
-                <!-- REPORT SUMMARY -->
+                <!-- =================================================
+                     REPORT SUMMARY
+                ================================================== -->
 
                 <div
                     id="reportSummary"
@@ -606,15 +641,15 @@
 
 
 
-                <!-- REPORT TABLE -->
+                <!-- =================================================
+                     REPORT TABLE
+                ================================================== -->
 
                 <div class="table-wrap">
-
 
                     <table
                         id="reportTable"
                     ></table>
-
 
                 </div>
 
@@ -623,6 +658,7 @@
 
 
         </section>
+
 
 
     </main>
@@ -660,6 +696,7 @@
 
 
             </div>
+
 
 
             <!-- MODAL FORM -->
