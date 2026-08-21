@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta
         name="viewport"
         content="width=device-width, initial-scale=1.0"
@@ -9,16 +12,41 @@
 
     <title>AL JEFOON TENTS - Payroll</title>
 
-    <link rel="stylesheet" href="style.css">
+
+    <!-- =====================================================
+         FAVICON
+    ====================================================== -->
+
+    <link
+        rel="icon"
+        type="image/png"
+        href="favicon.png"
+    >
+
+
+    <!-- =====================================================
+         STYLESHEET
+    ====================================================== -->
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
 </head>
 
+
 <body>
+
 
     <!-- =====================================================
          SIDEBAR
     ====================================================== -->
 
     <aside class="sidebar">
+
+
+        <!-- BRAND -->
 
         <div class="brand">
 
@@ -39,6 +67,9 @@
 
         <nav>
 
+
+            <!-- DASHBOARD -->
+
             <button
                 class="nav-btn active"
                 data-section="dashboard"
@@ -46,6 +77,8 @@
                 Dashboard
             </button>
 
+
+            <!-- EMPLOYEES -->
 
             <button
                 class="nav-btn"
@@ -55,6 +88,8 @@
             </button>
 
 
+            <!-- TRANSACTIONS -->
+
             <button
                 class="nav-btn"
                 data-section="transactions"
@@ -63,6 +98,8 @@
             </button>
 
 
+            <!-- LEAVE -->
+
             <button
                 class="nav-btn"
                 data-section="leave"
@@ -70,6 +107,8 @@
                 Leave
             </button>
 
+
+            <!-- REPORTS -->
 
             <button
                 class="nav-btn"
@@ -88,9 +127,11 @@
                 Dark Mode
             </button>
 
+
         </nav>
 
     </aside>
+
 
 
     <!-- =====================================================
@@ -106,16 +147,20 @@
 
         <header class="topbar">
 
+
             <div>
 
                 <h1 id="pageTitle">
                     Payroll Dashboard
                 </h1>
 
+
                 <div id="clock"></div>
 
             </div>
 
+
+            <!-- PRINT -->
 
             <button
                 class="primary"
@@ -125,7 +170,9 @@
                 Print
             </button>
 
+
         </header>
+
 
 
         <!-- =================================================
@@ -137,8 +184,13 @@
             class="section active"
         >
 
+
+            <!-- DASHBOARD CARDS -->
+
             <div class="cards">
 
+
+                <!-- EMPLOYEES -->
 
                 <div class="card">
 
@@ -153,6 +205,8 @@
                 </div>
 
 
+                <!-- MONTHLY SALARIES -->
+
                 <div class="card">
 
                     <span>
@@ -165,6 +219,8 @@
 
                 </div>
 
+
+                <!-- PAID -->
 
                 <div class="card">
 
@@ -179,6 +235,8 @@
                 </div>
 
 
+                <!-- PENDING -->
+
                 <div class="card">
 
                     <span>
@@ -192,6 +250,8 @@
                 </div>
 
 
+                <!-- LOANS -->
+
                 <div class="card">
 
                     <span>
@@ -204,6 +264,8 @@
 
                 </div>
 
+
+                <!-- LEAVE -->
 
                 <div class="card">
 
@@ -221,11 +283,16 @@
             </div>
 
 
-            <!-- MONTHLY PAYROLL -->
+
+            <!-- =================================================
+                 CURRENT MONTH PAYROLL
+            ================================================== -->
 
             <div class="panel">
 
+
                 <div class="panel-head">
+
 
                     <h2>
                         Current Month Payroll
@@ -237,20 +304,26 @@
                         id="dashboardMonth"
                     >
 
+
                 </div>
 
 
                 <div class="table-wrap">
 
+
                     <table
                         id="dashboardTable"
                     ></table>
 
+
                 </div>
+
 
             </div>
 
+
         </section>
+
 
 
         <!-- =================================================
@@ -262,9 +335,12 @@
             class="section"
         >
 
+
             <div class="panel">
 
+
                 <div class="panel-head">
+
 
                     <h2>
                         Employees
@@ -278,24 +354,30 @@
                         Add Employee
                     </button>
 
+
                 </div>
 
 
                 <div class="table-wrap">
 
+
                     <table
                         id="employeesTable"
                     ></table>
 
+
                 </div>
 
+
             </div>
+
 
         </section>
 
 
+
         <!-- =================================================
-             TRANSACTIONS
+             SALARY / ADVANCES / LOANS
         ================================================== -->
 
         <section
@@ -303,9 +385,12 @@
             class="section"
         >
 
+
             <div class="panel">
 
+
                 <div class="panel-head">
+
 
                     <h2>
                         Salary / Advances / Loans
@@ -319,7 +404,9 @@
                         Add Transaction
                     </button>
 
+
                 </div>
+
 
 
                 <!-- FILTERS -->
@@ -327,11 +414,15 @@
                 <div class="filters">
 
 
+                    <!-- MONTH -->
+
                     <input
                         type="month"
                         id="transactionMonth"
                     >
 
+
+                    <!-- EMPLOYEE -->
 
                     <select
                         id="transactionEmployee"
@@ -343,6 +434,8 @@
 
                     </select>
 
+
+                    <!-- TYPE -->
 
                     <select
                         id="transactionType"
@@ -377,22 +470,32 @@
                             Other Adjustment
                         </option>
 
+
                     </select>
+
 
                 </div>
 
 
+
+                <!-- TRANSACTIONS TABLE -->
+
                 <div class="table-wrap">
+
 
                     <table
                         id="transactionsTable"
                     ></table>
 
+
                 </div>
+
 
             </div>
 
+
         </section>
+
 
 
         <!-- =================================================
@@ -404,9 +507,12 @@
             class="section"
         >
 
+
             <div class="panel">
 
+
                 <div class="panel-head">
+
 
                     <h2>
                         Staff Leave
@@ -420,20 +526,26 @@
                         Record Leave
                     </button>
 
+
                 </div>
 
 
                 <div class="table-wrap">
 
+
                     <table
                         id="leaveTable"
                     ></table>
 
+
                 </div>
+
 
             </div>
 
+
         </section>
+
 
 
         <!-- =================================================
@@ -445,9 +557,12 @@
             class="section"
         >
 
+
             <div class="panel">
 
+
                 <div class="panel-head">
+
 
                     <h2>
                         Monthly Payroll Report
@@ -456,11 +571,16 @@
 
                     <div class="report-actions">
 
+
+                        <!-- REPORT MONTH -->
+
                         <input
                             type="month"
                             id="reportMonth"
                         >
 
+
+                        <!-- PRINT REPORT -->
 
                         <button
                             class="primary"
@@ -469,9 +589,12 @@
                             Print Monthly Report
                         </button>
 
+
                     </div>
 
+
                 </div>
+
 
 
                 <!-- REPORT SUMMARY -->
@@ -482,21 +605,28 @@
                 ></div>
 
 
+
                 <!-- REPORT TABLE -->
 
                 <div class="table-wrap">
+
 
                     <table
                         id="reportTable"
                     ></table>
 
+
                 </div>
+
 
             </div>
 
+
         </section>
 
+
     </main>
+
 
 
     <!-- =====================================================
@@ -508,10 +638,14 @@
         class="modal hidden"
     >
 
+
         <div class="modal-box">
 
 
+            <!-- MODAL HEADER -->
+
             <div class="modal-head">
+
 
                 <h2 id="modalTitle"></h2>
 
@@ -524,16 +658,22 @@
                     ×
                 </button>
 
+
             </div>
 
+
+            <!-- MODAL FORM -->
 
             <form
                 id="modalForm"
             ></form>
 
+
         </div>
 
+
     </div>
+
 
 
     <!-- =====================================================
@@ -542,5 +682,7 @@
 
     <script src="script.js"></script>
 
+
 </body>
+
 </html>
