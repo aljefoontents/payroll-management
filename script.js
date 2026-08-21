@@ -1,2201 +1,1099 @@
 /* =====================================================
    AL JEFOON TENTS
    PAYROLL SYSTEM
-   SCRIPT.JS
+   STYLE.CSS
    VERSION 2.1
-
-   IMPORTANT PAYROLL RULE:
-
-   BASIC SALARY IS USED FOR:
-   - Salary Paid
-   - Pending Salary
-   - Fully Paid
-   - Partially Paid
-   - Pending
-
-   FOOD ALLOWANCE IS DISPLAYED SEPARATELY
-   AND IS NOT INCLUDED IN SALARY PAYMENT CALCULATIONS.
-
-   Example:
-
-   Basic Salary:     AED 2,000
-   Food Allowance:   AED   400
-   Salary Paid:      AED   200
-   Pending Salary:   AED 1,800
-
-   Food allowance does NOT make the pending amount AED 2,200.
 ===================================================== */
 
 
 /* =====================================================
-   STORAGE
+   RESET
 ===================================================== */
 
-const STORAGE_KEY = "alJefoonPayrollV1";
-const DARK_MODE_KEY = "alJefoonPayrollDarkMode";
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+
+html {
+    scroll-behavior: smooth;
+}
+
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f5f6f8;
+    color: #222;
+    min-height: 100vh;
+}
 
 
 /* =====================================================
-   APPLICATION STATE
+   VARIABLES
 ===================================================== */
 
-let state =
-    JSON.parse(
-        localStorage.getItem(STORAGE_KEY) || "null"
-    ) || {
-        employees: [],
-        transactions: [],
-        leaves: []
-    };
+:root {
+
+    --primary: #fcc224;
+    --primary-dark: #e5aa00;
+
+    --sidebar: #000000;
+    --sidebar-text: #ffffff;
+
+    --background: #f5f6f8;
+    --card: #ffffff;
+
+    --text: #222222;
+    --muted: #777777;
+
+    --border: #dddddd;
+
+    --success: #198754;
+    --warning: #d98c00;
+    --danger: #dc3545;
+
+}
 
 
 /* =====================================================
-   SAVE DATA
+   BODY
 ===================================================== */
 
-function save() {
+body {
+    overflow-x: hidden;
+}
 
-    localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(state)
+
+/* =====================================================
+   SIDEBAR
+===================================================== */
+
+.sidebar {
+
+    position: fixed;
+
+    top: 0;
+    left: 0;
+
+    width: 250px;
+    height: 100vh;
+
+    background: #000000;
+
+    color: #ffffff;
+
+    display: flex;
+    flex-direction: column;
+
+    z-index: 1000;
+
+}
+
+
+.brand {
+
+    padding: 28px 22px 24px;
+
+    border-bottom: 1px solid #222;
+
+}
+
+
+.brand-title {
+
+    color: #ffffff;
+
+    font-size: 22px;
+
+    font-weight: 800;
+
+    letter-spacing: .5px;
+
+}
+
+
+.brand-subtitle {
+
+    color: #fcc224;
+
+    font-size: 13px;
+
+    margin-top: 5px;
+
+    font-weight: 600;
+
+}
+
+
+.navigation {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 5px;
+
+    padding: 20px 12px;
+
+}
+
+
+.nav-btn {
+
+    width: 100%;
+
+    border: none;
+
+    background: transparent;
+
+    color: #ffffff;
+
+    text-align: left;
+
+    padding: 13px 15px;
+
+    border-radius: 7px;
+
+    cursor: pointer;
+
+    font-family: Arial, Helvetica, sans-serif;
+
+    font-size: 14px;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    transition:
+        background .2s ease,
+        color .2s ease;
+
+}
+
+
+.nav-btn span {
+
+    width: 22px;
+
+    text-align: center;
+
+    font-size: 17px;
+
+}
+
+
+.nav-btn:hover {
+
+    background: #222222;
+
+}
+
+
+.nav-btn.active {
+
+    background: #fcc224;
+
+    color: #000000;
+
+    font-weight: 700;
+
+}
+
+
+.sidebar-bottom {
+
+    margin-top: auto;
+
+    padding: 15px 12px 20px;
+
+    border-top: 1px solid #222;
+
+}
+
+
+.dark-mode-btn {
+
+    width: 100%;
+
+    padding: 12px;
+
+    border: 1px solid #333;
+
+    border-radius: 7px;
+
+    background: #111111;
+
+    color: #ffffff;
+
+    cursor: pointer;
+
+    font-family: Arial, Helvetica, sans-serif;
+
+    font-size: 14px;
+
+}
+
+
+.dark-mode-btn:hover {
+
+    background: #222222;
+
+}
+
+
+/* =====================================================
+   MAIN
+===================================================== */
+
+.main {
+
+    margin-left: 250px;
+
+    min-height: 100vh;
+
+    padding: 0 30px 40px;
+
+}
+
+
+/* =====================================================
+   TOPBAR
+===================================================== */
+
+.topbar {
+
+    min-height: 92px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    border-bottom: 1px solid var(--border);
+
+    margin-bottom: 30px;
+
+}
+
+
+.topbar h1 {
+
+    font-size: 25px;
+
+    font-weight: 700;
+
+}
+
+
+.topbar-brand {
+
+    font-size: 14px;
+
+    font-weight: 700;
+
+    letter-spacing: .5px;
+
+}
+
+
+.digital-clock {
+
+    margin-top: 5px;
+
+    color: var(--muted);
+
+    font-size: 13px;
+
+}
+
+
+/* =====================================================
+   SECTIONS
+===================================================== */
+
+.section {
+
+    display: none;
+
+}
+
+
+.section.active {
+
+    display: block;
+
+}
+
+
+/* =====================================================
+   SECTION HEADER
+===================================================== */
+
+.section-header {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 20px;
+
+    margin-bottom: 25px;
+
+}
+
+
+.section-header h2 {
+
+    font-size: 22px;
+
+    margin-bottom: 5px;
+
+}
+
+
+.section-header p {
+
+    color: var(--muted);
+
+    font-size: 14px;
+
+}
+
+
+/* =====================================================
+   BUTTONS
+===================================================== */
+
+button {
+
+    font-family: Arial, Helvetica, sans-serif;
+
+}
+
+
+.primary {
+
+    background: #fcc224;
+
+    color: #000000;
+
+    border: none;
+
+    border-radius: 7px;
+
+    padding: 11px 17px;
+
+    font-size: 14px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        background .2s ease,
+        transform .1s ease;
+
+}
+
+
+.primary:hover {
+
+    background: #e5aa00;
+
+}
+
+
+.primary:active {
+
+    transform: translateY(1px);
+
+}
+
+
+.action-btn {
+
+    background: transparent;
+
+    color: var(--text);
+
+    border: 1px solid var(--border);
+
+    border-radius: 5px;
+
+    padding: 7px 10px;
+
+    font-size: 12px;
+
+    cursor: pointer;
+
+    margin-right: 4px;
+
+    margin-bottom: 3px;
+
+}
+
+
+.action-btn:hover {
+
+    border-color: #999;
+
+    background: rgba(0,0,0,.04);
+
+}
+
+
+/* =====================================================
+   STATS
+===================================================== */
+
+.stats-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            auto-fit,
+            minmax(190px, 1fr)
+        );
+
+    gap: 16px;
+
+    margin-bottom: 25px;
+
+}
+
+
+.stat-card {
+
+    background: var(--card);
+
+    border: 1px solid var(--border);
+
+    border-radius: 9px;
+
+    padding: 19px;
+
+    box-shadow:
+        0 2px 8px rgba(0,0,0,.03);
+
+}
+
+
+.stat-card span {
+
+    display: block;
+
+    color: var(--muted);
+
+    font-size: 13px;
+
+    margin-bottom: 8px;
+
+}
+
+
+.stat-card strong {
+
+    display: block;
+
+    font-size: 21px;
+
+    color: var(--text);
+
+}
+
+
+/* =====================================================
+   CARDS
+===================================================== */
+
+.card {
+
+    background: var(--card);
+
+    border: 1px solid var(--border);
+
+    border-radius: 9px;
+
+    box-shadow:
+        0 2px 8px rgba(0,0,0,.03);
+
+    margin-bottom: 25px;
+
+}
+
+
+.card-header {
+
+    padding: 18px 20px;
+
+    border-bottom: 1px solid var(--border);
+
+}
+
+
+.card-header h3 {
+
+    font-size: 16px;
+
+}
+
+
+.card-header p {
+
+    color: var(--muted);
+
+    font-size: 12px;
+
+    margin-top: 5px;
+
+}
+
+
+/* =====================================================
+   TABLE
+===================================================== */
+
+.table-wrapper {
+
+    width: 100%;
+
+    overflow-x: auto;
+
+}
+
+
+.data-table {
+
+    width: 100%;
+
+    border-collapse: collapse;
+
+    font-size: 13px;
+
+}
+
+
+.data-table th {
+
+    background: #f1f2f4;
+
+    color: #444;
+
+    font-weight: 700;
+
+    padding: 12px 14px;
+
+    text-align: left;
+
+    border-bottom: 1px solid var(--border);
+
+    white-space: nowrap;
+
+}
+
+
+.data-table td {
+
+    padding: 12px 14px;
+
+    border-bottom: 1px solid var(--border);
+
+    vertical-align: middle;
+
+}
+
+
+.data-table tbody tr:hover {
+
+    background: rgba(0,0,0,.025);
+
+}
+
+
+.data-table tbody tr:last-child td {
+
+    border-bottom: none;
+
+}
+
+
+.num {
+
+    text-align: right !important;
+
+    white-space: nowrap;
+
+}
+
+
+.empty {
+
+    text-align: center !important;
+
+    color: var(--muted);
+
+    padding: 35px !important;
+
+}
+
+
+/* =====================================================
+   STATUS
+===================================================== */
+
+.status {
+
+    display: inline-block;
+
+    padding: 5px 9px;
+
+    border-radius: 20px;
+
+    font-size: 10px;
+
+    font-weight: 800;
+
+    white-space: nowrap;
+
+}
+
+
+.status.paid {
+
+    background: #dff4e7;
+
+    color: #157347;
+
+}
+
+
+.status.partial {
+
+    background: #fff0d0;
+
+    color: #9a6200;
+
+}
+
+
+.status.pending {
+
+    background: #fde2e2;
+
+    color: #b02a37;
+
+}
+
+
+/* =====================================================
+   MONTH SELECTORS
+===================================================== */
+
+.month-selector,
+.report-month-selector {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 9px;
+
+}
+
+
+.month-selector label,
+.report-month-selector label {
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+}
+
+
+/* =====================================================
+   FORM ELEMENTS
+===================================================== */
+
+input,
+select,
+textarea {
+
+    font-family: Arial, Helvetica, sans-serif;
+
+    font-size: 14px;
+
+    color: var(--text);
+
+    background: var(--card);
+
+    border: 1px solid var(--border);
+
+    border-radius: 6px;
+
+    padding: 10px 11px;
+
+    outline: none;
+
+}
+
+
+input:focus,
+select:focus,
+textarea:focus {
+
+    border-color: #fcc224;
+
+    box-shadow:
+        0 0 0 2px rgba(
+            252,
+            194,
+            36,
+            .15
+        );
+
+}
+
+
+input[type="month"],
+input[type="date"] {
+
+    min-height: 40px;
+
+}
+
+
+/* =====================================================
+   DARK MODE CALENDAR ICON
+===================================================== */
+
+/*
+   This is the important fix.
+
+   Without color-scheme: dark, Chrome can show
+   the calendar icon as black against a dark field.
+
+   This makes the native calendar icon visible.
+*/
+
+body.dark-mode input[type="date"],
+body.dark-mode input[type="month"] {
+
+    color-scheme: dark;
+
+}
+
+
+/* =====================================================
+   FILTER BAR
+===================================================== */
+
+.filter-bar {
+
+    background: var(--card);
+
+    border: 1px solid var(--border);
+
+    border-radius: 9px;
+
+    padding: 15px;
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 15px;
+
+    margin-bottom: 20px;
+
+}
+
+
+.filter-field {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 6px;
+
+    min-width: 180px;
+
+}
+
+
+.filter-field label {
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+    color: var(--muted);
+
+}
+
+
+/* =====================================================
+   INFO BOX
+===================================================== */
+
+.info-box {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    background: #fff8df;
+
+    border: 1px solid #f3d46b;
+
+    border-radius: 7px;
+
+    padding: 12px 15px;
+
+    margin-bottom: 20px;
+
+    font-size: 13px;
+
+}
+
+
+.info-box strong {
+
+    color: #000;
+
+}
+
+
+.info-box span {
+
+    color: #555;
+
+}
+
+
+/* =====================================================
+   REPORT SUMMARY
+===================================================== */
+
+.report-summary {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            auto-fit,
+            minmax(180px, 1fr)
+        );
+
+    gap: 12px;
+
+    margin-bottom: 20px;
+
+}
+
+
+.summary-box {
+
+    background: var(--card);
+
+    border: 1px solid var(--border);
+
+    border-radius: 8px;
+
+    padding: 15px;
+
+}
+
+
+.summary-box span {
+
+    display: block;
+
+    color: var(--muted);
+
+    font-size: 12px;
+
+    margin-bottom: 7px;
+
+}
+
+
+.summary-box strong {
+
+    display: block;
+
+    font-size: 17px;
+
+}
+
+
+/* =====================================================
+   REPORT NOTE
+===================================================== */
+
+.report-note {
+
+    color: var(--muted);
+
+    font-size: 12px;
+
+    margin-top: 5px;
+
+}
+
+
+/* =====================================================
+   PRINT OPTIONS
+===================================================== */
+
+.print-options {
+
+    padding: 20px;
+
+    margin-bottom: 20px;
+
+}
+
+
+.print-options-header {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 20px;
+
+    margin-bottom: 20px;
+
+}
+
+
+.print-options-header h3 {
+
+    font-size: 17px;
+
+    margin-bottom: 4px;
+
+}
+
+
+.print-options-header p {
+
+    color: var(--muted);
+
+    font-size: 13px;
+
+}
+
+
+.print-button {
+
+    white-space: nowrap;
+
+}
+
+
+.print-filter-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            auto-fit,
+            minmax(220px, 1fr)
+        );
+
+    gap: 12px;
+
+}
+
+
+.print-option {
+
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 10px;
+
+    border: 1px solid var(--border);
+
+    border-radius: 7px;
+
+    padding: 13px;
+
+    cursor: pointer;
+
+    transition:
+        border-color .2s ease,
+        background .2s ease;
+
+}
+
+
+.print-option:hover {
+
+    border-color: #fcc224;
+
+    background: rgba(
+        252,
+        194,
+        36,
+        .06
     );
 
 }
 
 
-/* =====================================================
-   HELPER
-===================================================== */
+.print-option input {
 
-const $ = id =>
-    document.getElementById(id);
+    margin-top: 3px;
 
-
-function money(value) {
-
-    return `AED ${Number(value || 0).toLocaleString(
-        "en-AE",
-        {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }
-    )}`;
+    accent-color: #fcc224;
 
 }
 
 
-function monthKey(date) {
+.print-option label {
 
-    if (!date) return "";
+    display: flex;
 
-    const d = new Date(date);
+    flex-direction: column;
 
-    if (isNaN(d)) return "";
+    gap: 4px;
 
-    return `${d.getFullYear()}-${String(
-        d.getMonth() + 1
-    ).padStart(2, "0")}`;
+    cursor: pointer;
 
 }
 
 
-function currentMonth() {
+.print-option label strong {
 
-    const d = new Date();
-
-    return `${d.getFullYear()}-${String(
-        d.getMonth() + 1
-    ).padStart(2, "0")}`;
+    font-size: 13px;
 
 }
 
 
-function escapeHTML(value) {
+.print-option label span {
 
-    return String(value ?? "")
-        .replace(/[&<>"']/g, character => {
+    color: var(--muted);
 
-            const entities = {
-                "&": "&amp;",
-                "<": "&lt;",
-                ">": "&gt;",
-                '"': "&quot;",
-                "'": "&#039;"
-            };
+    font-size: 11px;
 
-            return entities[character];
-
-        });
-
-}
-
-
-function getEmployee(id) {
-
-    return state.employees.find(
-        employee =>
-            employee.id === id
-    );
-
-}
-
-
-function employeeName(id) {
-
-    const employee =
-        getEmployee(id);
-
-    return employee
-        ? employee.name
-        : "Unknown Employee";
-
-}
-
-
-function generateID(prefix) {
-
-    return (
-        prefix +
-        Date.now().toString(36) +
-        Math.random()
-            .toString(36)
-            .substring(2, 7)
-    ).toUpperCase();
-
-}
-
-
-/* =====================================================
-   AUTOMATIC EMPLOYEE ID
-   STARTS AT EMP003
-===================================================== */
-
-function getNextEmployeeID() {
-
-    let highestNumber = 2;
-
-
-    state.employees.forEach(employee => {
-
-        const match =
-            String(employee.id || "")
-                .match(/^EMP(\d+)$/i);
-
-
-        if (match) {
-
-            const number =
-                parseInt(
-                    match[1],
-                    10
-                );
-
-
-            if (
-                number > highestNumber
-            ) {
-
-                highestNumber =
-                    number;
-
-            }
-
-        }
-
-    });
-
-
-    return (
-        "EMP" +
-        String(
-            highestNumber + 1
-        ).padStart(3, "0")
-    );
-
-}
-
-
-/* =====================================================
-   GET SALARY PAYMENTS FOR MONTH
-=====================================================
-
-   ONLY transactions with:
-
-       type === "salary"
-
-   are counted.
-
-   Food allowance is NOT counted.
-
-   Advances are NOT counted.
-
-   Loans are NOT counted.
-
-   Loan repayments are NOT counted.
-===================================================== */
-
-function getMonthlySalaryPaid(
-    employee,
-    month
-) {
-
-    return state.transactions
-        .filter(
-            transaction =>
-
-                transaction.employeeId ===
-                employee.id &&
-
-                transaction.type ===
-                "salary" &&
-
-                monthKey(
-                    transaction.date
-                ) === month
-        )
-        .reduce(
-            (
-                total,
-                transaction
-            ) =>
-
-                total +
-                Number(
-                    transaction.amount || 0
-                ),
-
-            0
-        );
-
-}
-
-
-/* =====================================================
-   MONTHLY PAYROLL CALCULATION
-===================================================== */
-
-function payrollFor(
-    employee,
-    month
-) {
-
-    /* -----------------------------------------------
-       BASIC SALARY
-    ----------------------------------------------- */
-
-    const basicSalary =
-        Number(
-            employee.salary || 0
-        );
-
-
-    /* -----------------------------------------------
-       FOOD ALLOWANCE
-       DISPLAY ONLY
-    ----------------------------------------------- */
-
-    const foodAllowance =
-        Number(
-            employee.food || 0
-        );
-
-
-    /* -----------------------------------------------
-       SALARY PAID
-
-       IMPORTANT:
-       This only uses salary transactions.
-    ----------------------------------------------- */
-
-    const salaryPaid =
-        getMonthlySalaryPaid(
-            employee,
-            month
-        );
-
-
-    /* -----------------------------------------------
-       PENDING SALARY
-
-       FOOD ALLOWANCE IS NOT INCLUDED.
-
-       Example:
-
-       Salary = 2000
-       Food   = 400
-       Paid   = 200
-
-       Pending = 2000 - 200
-               = 1800
-    ----------------------------------------------- */
-
-    const pendingSalary =
-        Math.max(
-            0,
-            basicSalary -
-            salaryPaid
-        );
-
-
-    /* -----------------------------------------------
-       PAYMENT STATUS
-    ----------------------------------------------- */
-
-    let status =
-        "PENDING";
-
-
-    if (
-        basicSalary <= 0
-    ) {
-
-        status =
-            "PENDING";
-
-    } else if (
-        salaryPaid >=
-        basicSalary
-    ) {
-
-        status =
-            "FULLY PAID";
-
-    } else if (
-        salaryPaid > 0
-    ) {
-
-        status =
-            "PARTIALLY PAID";
-
-    }
-
-
-    /* -----------------------------------------------
-       ADVANCES
-    ----------------------------------------------- */
-
-    const advances =
-        state.transactions
-            .filter(
-                transaction =>
-
-                    transaction.employeeId ===
-                    employee.id &&
-
-                    transaction.type ===
-                    "advance" &&
-
-                    monthKey(
-                        transaction.date
-                    ) === month
-            )
-            .reduce(
-                (
-                    total,
-                    transaction
-                ) =>
-                    total +
-                    Number(
-                        transaction.amount || 0
-                    ),
-
-                0
-            );
-
-
-    /* -----------------------------------------------
-       LOAN REPAYMENTS
-    ----------------------------------------------- */
-
-    const loanRepayments =
-        state.transactions
-            .filter(
-                transaction =>
-
-                    transaction.employeeId ===
-                    employee.id &&
-
-                    transaction.type ===
-                    "loan_repayment" &&
-
-                    monthKey(
-                        transaction.date
-                    ) === month
-            )
-            .reduce(
-                (
-                    total,
-                    transaction
-                ) =>
-                    total +
-                    Number(
-                        transaction.amount || 0
-                    ),
-
-                0
-            );
-
-
-    /* -----------------------------------------------
-       OTHER ADJUSTMENTS
-    ----------------------------------------------- */
-
-    const adjustments =
-        state.transactions
-            .filter(
-                transaction =>
-
-                    transaction.employeeId ===
-                    employee.id &&
-
-                    transaction.type ===
-                    "adjustment" &&
-
-                    monthKey(
-                        transaction.date
-                    ) === month
-            )
-            .reduce(
-                (
-                    total,
-                    transaction
-                ) =>
-                    total +
-                    Number(
-                        transaction.amount || 0
-                    ),
-
-                0
-            );
-
-
-    /* -----------------------------------------------
-       LEAVE DAYS
-    ----------------------------------------------- */
-
-    const leaveDays =
-        state.leaves
-            .filter(
-                leave =>
-
-                    leave.employeeId ===
-                    employee.id &&
-
-                    monthKey(
-                        leave.startDate
-                    ) === month
-            )
-            .reduce(
-                (
-                    total,
-                    leave
-                ) =>
-                    total +
-                    Number(
-                        leave.days || 0
-                    ),
-
-                0
-            );
-
-
-    return {
-
-        /* BASIC SALARY */
-        salary:
-            basicSalary,
-
-        /* FOOD DISPLAY ONLY */
-        food:
-            foodAllowance,
-
-        /* IMPORTANT:
-           This is the amount against which
-           salary payments are calculated.
-        */
-        salaryDue:
-            basicSalary,
-
-        /* Salary payments only */
-        salaryPaid:
-
-            Math.min(
-                salaryPaid,
-                basicSalary
-            ),
-
-        /* Remaining basic salary */
-        pending:
-
-            pendingSalary,
-
-        status,
-
-        advances,
-
-        loanRepayments,
-
-        adjustments,
-
-        leaveDays
-
-    };
-
-}
-
-
-/* =====================================================
-   OUTSTANDING LOAN
-===================================================== */
-
-function outstandingLoan(
-    employee
-) {
-
-    return state.transactions
-        .filter(
-            transaction =>
-                transaction.employeeId ===
-                employee.id
-        )
-        .reduce(
-            (
-                total,
-                transaction
-            ) => {
-
-                if (
-                    transaction.type ===
-                    "loan"
-                ) {
-
-                    return (
-                        total +
-                        Number(
-                            transaction.amount ||
-                            0
-                        )
-                    );
-
-                }
-
-
-                if (
-                    transaction.type ===
-                    "loan_repayment"
-                ) {
-
-                    return (
-                        total -
-                        Number(
-                            transaction.amount ||
-                            0
-                        )
-                    );
-
-                }
-
-
-                return total;
-
-            },
-
-            0
-        );
-
-}
-
-
-/* =====================================================
-   STATUS HTML
-===================================================== */
-
-function statusHTML(
-    status
-) {
-
-    if (
-        status ===
-        "FULLY PAID"
-    ) {
-
-        return `
-            <span class="status paid">
-                FULLY PAID
-            </span>
-        `;
-
-    }
-
-
-    if (
-        status ===
-        "PARTIALLY PAID"
-    ) {
-
-        return `
-            <span class="status partial">
-                PARTIALLY PAID
-            </span>
-        `;
-
-    }
-
-
-    return `
-        <span class="status pending">
-            PENDING
-        </span>
-    `;
-
-}
-
-
-/* =====================================================
-   RENDER EVERYTHING
-===================================================== */
-
-function renderAll() {
-
-    populateEmployeeSelects();
-
-    renderDashboard();
-
-    renderEmployees();
-
-    renderTransactions();
-
-    renderLeave();
-
-    renderReport();
-
-}
-
-
-/* =====================================================
-   EMPLOYEE DROPDOWNS
-===================================================== */
-
-function populateEmployeeSelects() {
-
-    const select =
-        $("transactionEmployee");
-
-
-    if (!select)
-        return;
-
-
-    const currentValue =
-        select.value;
-
-
-    select.innerHTML =
-        `
-        <option value="">
-            All Employees
-        </option>
-        ` +
-
-        state.employees
-            .map(
-                employee =>
-
-                    `
-                    <option
-                        value="${escapeHTML(
-                            employee.id
-                        )}"
-                    >
-                        ${escapeHTML(
-                            employee.id
-                        )}
-                        -
-                        ${escapeHTML(
-                            employee.name
-                        )}
-                    </option>
-                    `
-            )
-            .join("");
-
-
-    select.value =
-        currentValue;
-
-}
-
-
-function employeeOptions(
-    selected = ""
-) {
-
-    return state.employees
-        .map(
-            employee =>
-
-                `
-                <option
-                    value="${escapeHTML(
-                        employee.id
-                    )}"
-                    ${
-                        employee.id === selected
-                            ? "selected"
-                            : ""
-                    }
-                >
-                    ${escapeHTML(
-                        employee.id
-                    )}
-                    -
-                    ${escapeHTML(
-                        employee.name
-                    )}
-                </option>
-                `
-        )
-        .join("");
-
-}
-
-
-/* =====================================================
-   DASHBOARD
-===================================================== */
-
-function renderDashboard() {
-
-    const monthInput =
-        $("dashboardMonth");
-
-
-    if (!monthInput)
-        return;
-
-
-    const month =
-        monthInput.value ||
-        currentMonth();
-
-
-    monthInput.value =
-        month;
-
-
-    const payroll =
-        state.employees.map(
-            employee =>
-                payrollFor(
-                    employee,
-                    month
-                )
-        );
-
-
-    /* -----------------------------------------------
-       TOTAL BASIC SALARIES
-    ----------------------------------------------- */
-
-    const totalSalaries =
-        payroll.reduce(
-            (
-                total,
-                row
-            ) =>
-                total +
-                row.salaryDue,
-
-            0
-        );
-
-
-    /* -----------------------------------------------
-       TOTAL FOOD ALLOWANCE
-       SEPARATE FROM SALARIES
-    ----------------------------------------------- */
-
-    const totalFood =
-        payroll.reduce(
-            (
-                total,
-                row
-            ) =>
-                total +
-                row.food,
-
-            0
-        );
-
-
-    /* -----------------------------------------------
-       TOTAL SALARY PAID
-    ----------------------------------------------- */
-
-    const totalPaid =
-        payroll.reduce(
-            (
-                total,
-                row
-            ) =>
-                total +
-                row.salaryPaid,
-
-            0
-        );
-
-
-    /* -----------------------------------------------
-       TOTAL PENDING SALARY
-    ----------------------------------------------- */
-
-    const totalPending =
-        payroll.reduce(
-            (
-                total,
-                row
-            ) =>
-                total +
-                row.pending,
-
-            0
-        );
-
-
-    /* -----------------------------------------------
-       LOANS
-    ----------------------------------------------- */
-
-    const totalLoans =
-        state.employees.reduce(
-            (
-                total,
-                employee
-            ) =>
-                total +
-                Math.max(
-                    0,
-                    outstandingLoan(
-                        employee
-                    )
-                ),
-
-            0
-        );
-
-
-    /* -----------------------------------------------
-       LEAVE
-    ----------------------------------------------- */
-
-    const employeesOnLeave =
-        payroll.filter(
-            row =>
-                row.leaveDays > 0
-        ).length;
-
-
-    /* -----------------------------------------------
-       STATUS COUNTS
-    ----------------------------------------------- */
-
-    const fullyPaid =
-        payroll.filter(
-            row =>
-                row.status ===
-                "FULLY PAID"
-        ).length;
-
-
-    const partiallyPaid =
-        payroll.filter(
-            row =>
-                row.status ===
-                "PARTIALLY PAID"
-        ).length;
-
-
-    const pendingEmployees =
-        payroll.filter(
-            row =>
-                row.status ===
-                "PENDING"
-        ).length;
-
-
-    /* -----------------------------------------------
-       DASHBOARD CARDS
-    ----------------------------------------------- */
-
-    if ($("statEmployees"))
-        $("statEmployees").textContent =
-            state.employees.length;
-
-
-    if ($("statSalaries"))
-        $("statSalaries").textContent =
-            money(totalSalaries);
-
-
-    if ($("statPaid"))
-        $("statPaid").textContent =
-            money(totalPaid);
-
-
-    if ($("statPending"))
-        $("statPending").textContent =
-            money(totalPending);
-
-
-    if ($("statLoans"))
-        $("statLoans").textContent =
-            money(totalLoans);
-
-
-    if ($("statLeave"))
-        $("statLeave").textContent =
-            employeesOnLeave;
-
-
-    if ($("statFullyPaid"))
-        $("statFullyPaid").textContent =
-            fullyPaid;
-
-
-    if ($("statPartiallyPaid"))
-        $("statPartiallyPaid").textContent =
-            partiallyPaid;
-
-
-    if ($("statPendingEmployees"))
-        $("statPendingEmployees").textContent =
-            pendingEmployees;
-
-
-    if ($("statFood"))
-        $("statFood").textContent =
-            money(totalFood);
-
-
-    /* -----------------------------------------------
-       DASHBOARD TABLE
-    ----------------------------------------------- */
-
-    if (!$("dashboardTable"))
-        return;
-
-
-    $("dashboardTable").innerHTML = `
-
-        <thead>
-
-            <tr>
-
-                <th>
-                    Employee ID
-                </th>
-
-                <th>
-                    Employee
-                </th>
-
-                <th class="num">
-                    Basic Salary
-                </th>
-
-                <th class="num">
-                    Food Allowance
-                </th>
-
-                <th class="num">
-                    Salary Paid
-                </th>
-
-                <th class="num">
-                    Pending Salary
-                </th>
-
-                <th>
-                    Status
-                </th>
-
-                <th>
-                    Leave
-                </th>
-
-            </tr>
-
-        </thead>
-
-
-        <tbody>
-
-            ${
-                state.employees.length
-
-                    ?
-
-                state.employees
-                    .map(
-                        (
-                            employee,
-                            index
-                        ) => {
-
-                            const row =
-                                payroll[index];
-
-
-                            return `
-
-                                <tr>
-
-                                    <td>
-                                        <b>
-                                            ${escapeHTML(
-                                                employee.id
-                                            )}
-                                        </b>
-                                    </td>
-
-                                    <td>
-                                        ${escapeHTML(
-                                            employee.name
-                                        )}
-                                    </td>
-
-                                    <td class="num">
-                                        ${money(
-                                            row.salary
-                                        )}
-                                    </td>
-
-                                    <td class="num">
-                                        ${money(
-                                            row.food
-                                        )}
-                                    </td>
-
-                                    <td class="num">
-                                        <b>
-                                            ${money(
-                                                row.salaryPaid
-                                            )}
-                                        </b>
-                                    </td>
-
-                                    <td class="num">
-                                        <b>
-                                            ${money(
-                                                row.pending
-                                            )}
-                                        </b>
-                                    </td>
-
-                                    <td>
-                                        ${statusHTML(
-                                            row.status
-                                        )}
-                                    </td>
-
-                                    <td>
-
-                                        ${
-                                            row.leaveDays
-                                                ?
-                                            `${row.leaveDays} day(s)`
-                                                :
-                                            "-"
-                                        }
-
-                                    </td>
-
-                                </tr>
-
-                            `;
-
-                        }
-                    )
-                    .join("")
-
-                    :
-
-                `
-                    <tr>
-
-                        <td
-                            colspan="8"
-                            class="empty"
-                        >
-                            No employees added yet.
-                        </td>
-
-                    </tr>
-                `
-            }
-
-        </tbody>
-
-    `;
-
-}
-
-
-/* =====================================================
-   EMPLOYEE TABLE
-===================================================== */
-
-function renderEmployees() {
-
-    if (!$("employeesTable"))
-        return;
-
-
-    $("employeesTable").innerHTML = `
-
-        <thead>
-
-            <tr>
-
-                <th>
-                    Employee ID
-                </th>
-
-                <th>
-                    Employee
-                </th>
-
-                <th class="num">
-                    Basic Salary
-                </th>
-
-                <th class="num">
-                    Food Allowance
-                </th>
-
-                <th class="num">
-                    Salary + Food
-                </th>
-
-                <th class="num">
-                    Loan Outstanding
-                </th>
-
-                <th>
-                    Actions
-                </th>
-
-            </tr>
-
-        </thead>
-
-
-        <tbody>
-
-            ${
-                state.employees.length
-
-                    ?
-
-                state.employees
-                    .map(
-                        employee => `
-
-                            <tr>
-
-                                <td>
-                                    <b>
-                                        ${escapeHTML(
-                                            employee.id
-                                        )}
-                                    </b>
-                                </td>
-
-                                <td>
-                                    ${escapeHTML(
-                                        employee.name
-                                    )}
-                                </td>
-
-                                <td class="num">
-                                    ${money(
-                                        employee.salary
-                                    )}
-                                </td>
-
-                                <td class="num">
-                                    ${money(
-                                        employee.food
-                                    )}
-                                </td>
-
-                                <td class="num">
-                                    ${money(
-                                        Number(
-                                            employee.salary
-                                        ) +
-                                        Number(
-                                            employee.food
-                                        )
-                                    )}
-                                </td>
-
-                                <td class="num">
-                                    ${money(
-                                        Math.max(
-                                            0,
-                                            outstandingLoan(
-                                                employee
-                                            )
-                                        )
-                                    )}
-                                </td>
-
-                                <td>
-
-                                    <button
-                                        class="action-btn"
-                                        onclick="editEmployee('${employee.id}')"
-                                    >
-                                        Edit
-                                    </button>
-
-                                    <button
-                                        class="action-btn"
-                                        onclick="deleteEmployee('${employee.id}')"
-                                    >
-                                        Delete
-                                    </button>
-
-                                </td>
-
-                            </tr>
-
-                        `
-                    )
-                    .join("")
-
-                    :
-
-                `
-                    <tr>
-
-                        <td
-                            colspan="7"
-                            class="empty"
-                        >
-                            No employees added yet.
-                        </td>
-
-                    </tr>
-                `
-            }
-
-        </tbody>
-
-    `;
-
-}
-
-
-/* =====================================================
-   TRANSACTIONS
-===================================================== */
-
-function renderTransactions() {
-
-    if (!$("transactionsTable"))
-        return;
-
-
-    const month =
-        $("transactionMonth")
-            ? $("transactionMonth").value
-            : "";
-
-
-    const employeeId =
-        $("transactionEmployee")
-            ? $("transactionEmployee").value
-            : "";
-
-
-    const type =
-        $("transactionType")
-            ? $("transactionType").value
-            : "";
-
-
-    let rows =
-        [...state.transactions]
-            .sort(
-                (
-                    a,
-                    b
-                ) =>
-                    new Date(b.date) -
-                    new Date(a.date)
-            );
-
-
-    if (month) {
-
-        rows =
-            rows.filter(
-                transaction =>
-                    monthKey(
-                        transaction.date
-                    ) === month
-            );
-
-    }
-
-
-    if (employeeId) {
-
-        rows =
-            rows.filter(
-                transaction =>
-                    transaction.employeeId ===
-                    employeeId
-            );
-
-    }
-
-
-    if (type) {
-
-        rows =
-            rows.filter(
-                transaction =>
-                    transaction.type ===
-                    type
-            );
-
-    }
-
-
-    const labels = {
-
-        salary:
-            "Salary Payment",
-
-        advance:
-            "Advance",
-
-        loan:
-            "Loan Given",
-
-        loan_repayment:
-            "Loan Repayment",
-
-        adjustment:
-            "Other Adjustment"
-
-    };
-
-
-    $("transactionsTable").innerHTML = `
-
-        <thead>
-
-            <tr>
-
-                <th>
-                    Date
-                </th>
-
-                <th>
-                    Employee
-                </th>
-
-                <th>
-                    Type
-                </th>
-
-                <th class="num">
-                    Amount
-                </th>
-
-                <th>
-                    Note
-                </th>
-
-                <th>
-                    Actions
-                </th>
-
-            </tr>
-
-        </thead>
-
-
-        <tbody>
-
-            ${
-                rows.length
-
-                    ?
-
-                rows
-                    .map(
-                        transaction => `
-
-                            <tr>
-
-                                <td>
-                                    ${escapeHTML(
-                                        transaction.date
-                                    )}
-                                </td>
-
-                                <td>
-
-                                    <b>
-                                        ${escapeHTML(
-                                            transaction.employeeId
-                                        )}
-                                    </b>
-
-                                    -
-                                    ${escapeHTML(
-                                        employeeName(
-                                            transaction.employeeId
-                                        )
-                                    )}
-
-                                </td>
-
-                                <td>
-                                    ${
-                                        labels[
-                                            transaction.type
-                                        ] ||
-                                        escapeHTML(
-                                            transaction.type
-                                        )
-                                    }
-                                </td>
-
-                                <td class="num">
-
-                                    ${money(
-                                        transaction.amount
-                                    )}
-
-                                </td>
-
-                                <td>
-
-                                    ${escapeHTML(
-                                        transaction.note
-                                    )}
-
-                                </td>
-
-                                <td>
-
-                                    <button
-                                        class="action-btn"
-                                        onclick="deleteTransaction('${transaction.id}')"
-                                    >
-                                        Delete
-                                    </button>
-
-                                </td>
-
-                            </tr>
-
-                        `
-                    )
-                    .join("")
-
-                    :
-
-                `
-                    <tr>
-
-                        <td
-                            colspan="6"
-                            class="empty"
-                        >
-                            No transactions found.
-                        </td>
-
-                    </tr>
-                `
-            }
-
-        </tbody>
-
-    `;
-
-}
-
-
-/* =====================================================
-   LEAVE TABLE
-===================================================== */
-
-function renderLeave() {
-
-    if (!$("leaveTable"))
-        return;
-
-
-    const rows =
-        [...state.leaves]
-            .sort(
-                (
-                    a,
-                    b
-                ) =>
-                    new Date(
-                        b.startDate
-                    ) -
-                    new Date(
-                        a.startDate
-                    )
-            );
-
-
-    $("leaveTable").innerHTML = `
-
-        <thead>
-
-            <tr>
-
-                <th>
-                    Employee
-                </th>
-
-                <th>
-                    Start Date
-                </th>
-
-                <th>
-                    End Date
-                </th>
-
-                <th>
-                    Days
-                </th>
-
-                <th>
-                    Reason
-                </th>
-
-                <th>
-                    Actions
-                </th>
-
-            </tr>
-
-        </thead>
-
-
-        <tbody>
-
-            ${
-                rows.length
-
-                    ?
-
-                rows
-                    .map(
-                        leave => `
-
-                            <tr>
-
-                                <td>
-
-                                    <b>
-                                        ${escapeHTML(
-                                            leave.employeeId
-                                        )}
-                                    </b>
-
-                                    -
-                                    ${escapeHTML(
-                                        employeeName(
-                                            leave.employeeId
-                                        )
-                                    )}
-
-                                </td>
-
-                                <td>
-                                    ${escapeHTML(
-                                        leave.startDate
-                                    )}
-                                </td>
-
-                                <td>
-                                    ${escapeHTML(
-                                        leave.endDate
-                                    )}
-                                </td>
-
-                                <td>
-                                    ${leave.days}
-                                </td>
-
-                                <td>
-                                    ${escapeHTML(
-                                        leave.reason
-                                    )}
-                                </td>
-
-                                <td>
-
-                                    <button
-                                        class="action-btn"
-                                        onclick="deleteLeave('${leave.id}')"
-                                    >
-                                        Delete
-                                    </button>
-
-                                </td>
-
-                            </tr>
-
-                        `
-                    )
-                    .join("")
-
-                    :
-
-                `
-                    <tr>
-
-                        <td
-                            colspan="6"
-                            class="empty"
-                        >
-                            No leave records found.
-                        </td>
-
-                    </tr>
-                `
-            }
-
-        </tbody>
-
-    `;
-
-}
-
-
-/* =====================================================
-   MONTHLY REPORT
-===================================================== */
-
-function renderReport() {
-
-    const reportMonth =
-        $("reportMonth");
-
-
-    if (!reportMonth)
-        return;
-
-
-    const month =
-        reportMonth.value ||
-        currentMonth();
-
-
-    reportMonth.value =
-        month;
-
-
-    const rows =
-        state.employees.map(
-            employee => ({
-
-                employee,
-
-                payroll:
-                    payrollFor(
-                        employee,
-                        month
-                    )
-
-            })
-        );
-
-
-    /* -----------------------------------------------
-       BASIC SALARY TOTAL
-    ----------------------------------------------- */
-
-    const totalSalaries =
-        rows.reduce(
-            (
-                total,
-                row
-            ) =>
-                total +
-                row.payroll.salaryDue,
-
-            0
-        );
-
-
-    /* -----------------------------------------------
-       FOOD ALLOWANCE TOTAL
-       SEPARATE
-    ----------------------------------------------- */
-
-    const totalFood =
-        rows.reduce(
-            (
-                total,
-                row
-            ) =>
-                total +
-                row.payroll.food,
-
-            0
-        );
-
-
-    /* -----------------------------------------------
-       SALARY PAID
-    ----------------------------------------------- */
-
-    const totalPaid =
-        rows.reduce(
-            (
-                total,
-                row
-            ) =>
-                total +
-                row.payroll.salaryPaid,
-
-            0
-        );
-
-
-    /* -----------------------------------------------
-       PENDING BASIC SALARY
-    ----------------------------------------------- */
-
-    const totalPending =
-        rows.reduce(
-            (
-                total,
-                row
-            ) =>
-                total +
-                row.payroll.pending,
-
-            0
-        );
-
-
-    /* -----------------------------------------------
-       STATUS COUNTS
-    ----------------------------------------------- */
-
-    const fullyPaid =
-        rows.filter(
-            row =>
-                row.payroll.status ===
-                "FULLY PAID"
-        ).length;
-
-
-    const partiallyPaid =
-        rows.filter(
-            row =>
-                row.payroll.status ===
-                "PARTIALLY PAID"
-        ).length;
-
-
-    const pendingEmployees =
-        rows.filter(
-            row =>
-                row.payroll.status ===
-                "PENDING"
-        ).length;
-
-
-    /* -----------------------------------------------
-       ADVANCES
-    ----------------------------------------------- */
-
-    const totalAdvances =
-        rows.reduce(
-            (
-                total,
-                row
-            ) =>
-                total +
-                row.payroll.advances,
-
-            0
-        );
-
-
-    /* -----------------------------------------------
-       LOANS
-    ----------------------------------------------- */
-
-    const totalLoans =
-        state.employees.reduce(
-            (
-                total,
-                employee
-            ) =>
-                total +
-                Math.max(
-                    0,
-                    outstandingLoan(
-                        employee
-                    )
-                ),
-
-            0
-        );
-
-
-    /* -----------------------------------------------
-       REPORT SUMMARY
-    ----------------------------------------------- */
-
-    if ($("reportSummary")) {
-
-        $("reportSummary").innerHTML = `
-
-            <div class="summary-box">
-
-                <span>
-                    Total Basic Salaries
-                </span>
-
-                <strong>
-                    ${money(
-                        totalSalaries
-                    )}
-                </strong>
-
-            </div>
-
-
-            <div class="summary-box">
-
-                <span>
-                    Food Allowance
-                </span>
-
-                <strong>
-                    ${money(
-                        totalFood
-                    )}
-                </strong>
-
-            </div>
-
-
-            <div class="summary-box">
-
-                <span>
-                    Salary Paid
-                </span>
-
-                <strong>
-                    ${money(
-                        totalPaid
-                    )}
-                </strong>
-
-            </div>
-
-
-            <div class="summary-box">
-
-                <span>
-                    Pending Salary
-                </span>
-
-                <strong>
-                    ${money(
-                        totalPending
-                    )}
-                </strong>
-
-            </div>
-
-
-            <div class="summary-box">
-
-                <span>
-                    Fully Paid
-                </span>
-
-                <strong>
-                    ${fullyPaid}
-                </strong>
-
-            </div>
-
-
-            <div class="summary-box">
-
-                <span>
-                    Partially Paid
-                </span>
-
-                <strong>
-                    ${partiallyPaid}
-                </strong>
-
-            </div>
-
-
-            <div class="summary-box">
-
-                <span>
-                    Pending
-                </span>
-
-                <strong>
-                    ${pendingEmployees}
-                </strong>
-
-            </div>
-
-
-            <div class="summary-box">
-
-                <span>
-                    Advances
-                </span>
-
-                <strong>
-                    ${money(
-                        totalAdvances
-                    )}
-                </strong>
-
-            </div>
-
-
-            <div class="summary-box">
-
-                <span>
-                    Outstanding Loans
-                </span>
-
-                <strong>
-                    ${money(
-                        totalLoans
-                    )}
-                </strong>
-
-            </div>
-
-        `;
-
-    }
-
-
-    /* -----------------------------------------------
-       REPORT TABLE
-    ----------------------------------------------- */
-
-    if (!$("reportTable"))
-        return;
-
-
-    $("reportTable").innerHTML = `
-
-        <thead>
-
-            <tr>
-
-                <th>
-                    Employee ID
-                </th>
-
-                <th>
-                    Employee
-                </th>
-
-                <th class="num">
-                    Basic Salary
-                </th>
-
-                <th class="num">
-                    Food Allowance
-                </th>
-
-                <th class="num">
-                    Salary Paid
-                </th>
-
-                <th class="num">
-                    Pending Salary
-                </th>
-
-                <th>
-                    Status
-                </th>
-
-                <th class="num">
-                    Advances
-                </th>
-
-                <th class="num">
-                    Loan Repayment
-                </th>
-
-                <th>
-                    Leave
-                </th>
-
-            </tr>
-
-        </thead>
-
-
-        <tbody>
-
-            ${
-                rows.length
-
-                    ?
-
-                rows
-                    .map(
-                        row => `
-
-                            <tr>
-
-                                <td>
-
-                                    <b>
-                                        ${escapeHTML(
-                                            row.employee.id
-                                        )}
-                                    </b>
-
-                                </td>
-
-
-                                <td>
-                                    ${escapeHTML(
-                                        row.employee.name
-                                    )}
-                                </td>
-
-
-                                <td class="num">
-
-                                    ${money(
-                                        row.payroll.salaryDue
-                                    )}
-
-                                </td>
-
-
-                                <td class="num">
-
-                                    ${money(
-                                        row.payroll.food
-                                    )}
-
-                                </td>
-
-
-                                <td class="num">
-
-                                    <b>
-                                        ${money(
-                                            row.payroll.salaryPaid
-                                        )}
-                                    </b>
-
-                                </td>
-
-
-                                <td class="num">
-
-                                    <b>
-                                        ${money(
-                                            row.payroll.pending
-                                        )}
-                                    </b>
-
-                                </td>
-
-
-                                <td>
-
-                                    ${statusHTML(
-                                        row.payroll.status
-                                    )}
-
-                                </td>
-
-
-                                <td class="num">
-
-                                    ${money(
-                                        row.payroll.advances
-                                    )}
-
-                                </td>
-
-
-                                <td class="num">
-
-                                    ${money(
-                                        row.payroll.loanRepayments
-                                    )}
-
-                                </td>
-
-
-                                <td>
-
-                                    ${
-                                        row.payroll.leaveDays
-                                            ?
-                                        `${row.payroll.leaveDays} day(s)`
-                                            :
-                                        "-"
-                                    }
-
-                                </td>
-
-                            </tr>
-
-                        `
-                    )
-                    .join("")
-
-                    :
-
-                `
-                    <tr>
-
-                        <td
-                            colspan="10"
-                            class="empty"
-                        >
-                            No employees added yet.
-                        </td>
-
-                    </tr>
-                `
-            }
-
-        </tbody>
-
-    `;
+    line-height: 1.4;
 
 }
 
@@ -2204,1320 +1102,775 @@ function renderReport() {
    MODAL
 ===================================================== */
 
-function openModal(
-    title,
-    html,
-    submitFunction
-) {
+.modal {
 
-    if (!$("modal"))
-        return;
+    position: fixed;
 
+    inset: 0;
 
-    $("modalTitle").textContent =
-        title;
-
-
-    $("modalForm").innerHTML =
-        html;
-
-
-    $("modal").classList.remove(
-        "hidden"
+    background: rgba(
+        0,
+        0,
+        0,
+        .65
     );
 
+    display: flex;
 
-    $("modalForm").onsubmit =
-        event => {
+    align-items: center;
 
-            event.preventDefault();
+    justify-content: center;
 
+    padding: 20px;
 
-            submitFunction(
-                new FormData(
-                    event.target
-                )
-            );
-
-        };
+    z-index: 2000;
 
 }
 
 
-function closeModal() {
+.modal.hidden {
 
-    if ($("modal")) {
-
-        $("modal").classList.add(
-            "hidden"
-        );
-
-    }
+    display: none;
 
 }
 
 
-if ($("closeModal")) {
+.modal-content {
 
-    $("closeModal").onclick =
-        closeModal;
+    width: 100%;
 
-}
+    max-width: 650px;
 
+    max-height: 90vh;
 
-if ($("modal")) {
+    overflow-y: auto;
 
-    $("modal").onclick =
-        event => {
+    background: var(--card);
 
-            if (
-                event.target ===
-                $("modal")
-            ) {
+    border-radius: 10px;
 
-                closeModal();
-
-            }
-
-        };
-
-}
-
-
-/* =====================================================
-   ADD EMPLOYEE
-===================================================== */
-
-function addEmployee() {
-
-    const nextID =
-        getNextEmployeeID();
-
-
-    openModal(
-
-        "Add Employee",
-
-        `
-
-        <div class="form-grid">
-
-
-            <div class="form-field">
-
-                <label>
-                    Employee ID
-                </label>
-
-                <input
-                    value="${nextID}"
-                    disabled
-                >
-
-                <input
-                    type="hidden"
-                    name="id"
-                    value="${nextID}"
-                >
-
-            </div>
-
-
-            <div class="form-field">
-
-                <label>
-                    Employee Name
-                </label>
-
-                <input
-                    name="name"
-                    required
-                    autofocus
-                    placeholder="Enter employee name"
-                >
-
-            </div>
-
-
-            <div class="form-field">
-
-                <label>
-                    Basic Salary (AED)
-                </label>
-
-                <input
-                    name="salary"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    required
-                >
-
-            </div>
-
-
-            <div class="form-field">
-
-                <label>
-                    Food Allowance (AED)
-                </label>
-
-                <input
-                    name="food"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value="0"
-                    required
-                >
-
-            </div>
-
-
-        </div>
-
-
-        <div class="form-actions">
-
-
-            <button
-                type="button"
-                class="action-btn"
-                onclick="closeModal()"
-            >
-                Cancel
-            </button>
-
-
-            <button
-                type="submit"
-                class="primary"
-            >
-                Save Employee
-            </button>
-
-
-        </div>
-
-        `,
-
-        formData => {
-
-            const id =
-                formData
-                    .get("id")
-                    .trim();
-
-
-            const name =
-                formData
-                    .get("name")
-                    .trim();
-
-
-            if (!name) {
-
-                alert(
-                    "Please enter the employee name."
-                );
-
-                return;
-
-            }
-
-
-            state.employees.push({
-
-                id,
-
-                name,
-
-                salary:
-                    Number(
-                        formData.get(
-                            "salary"
-                        )
-                    ),
-
-                food:
-                    Number(
-                        formData.get(
-                            "food"
-                        )
-                    )
-
-            });
-
-
-            save();
-
-            closeModal();
-
-            renderAll();
-
-        }
-
-    );
-
-}
-
-
-/* =====================================================
-   EDIT EMPLOYEE
-===================================================== */
-
-function editEmployee(id) {
-
-    const employee =
-        getEmployee(id);
-
-
-    if (!employee)
-        return;
-
-
-    openModal(
-
-        "Edit Employee",
-
-        `
-
-        <div class="form-grid">
-
-
-            <div class="form-field">
-
-                <label>
-                    Employee ID
-                </label>
-
-                <input
-                    value="${escapeHTML(
-                        employee.id
-                    )}"
-                    disabled
-                >
-
-            </div>
-
-
-            <div class="form-field">
-
-                <label>
-                    Employee Name
-                </label>
-
-                <input
-                    name="name"
-                    value="${escapeHTML(
-                        employee.name
-                    )}"
-                    required
-                >
-
-            </div>
-
-
-            <div class="form-field">
-
-                <label>
-                    Basic Salary (AED)
-                </label>
-
-                <input
-                    name="salary"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value="${employee.salary}"
-                    required
-                >
-
-            </div>
-
-
-            <div class="form-field">
-
-                <label>
-                    Food Allowance (AED)
-                </label>
-
-                <input
-                    name="food"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value="${employee.food}"
-                    required
-                >
-
-            </div>
-
-
-        </div>
-
-
-        <div class="form-actions">
-
-
-            <button
-                type="button"
-                class="action-btn"
-                onclick="closeModal()"
-            >
-                Cancel
-            </button>
-
-
-            <button
-                type="submit"
-                class="primary"
-            >
-                Save Changes
-            </button>
-
-
-        </div>
-
-        `,
-
-        formData => {
-
-            employee.name =
-                formData
-                    .get("name")
-                    .trim();
-
-
-            employee.salary =
-                Number(
-                    formData.get(
-                        "salary"
-                    )
-                );
-
-
-            employee.food =
-                Number(
-                    formData.get(
-                        "food"
-                    )
-                );
-
-
-            save();
-
-            closeModal();
-
-            renderAll();
-
-        }
-
-    );
-
-}
-
-
-/* =====================================================
-   DELETE EMPLOYEE
-===================================================== */
-
-function deleteEmployee(id) {
-
-    const employee =
-        getEmployee(id);
-
-
-    if (!employee)
-        return;
-
-
-    if (
-        !confirm(
-            `Delete ${employee.name}?\n\n` +
-            `All salary, advance, loan and leave ` +
-            `records for this employee will also be deleted.`
-        )
-    ) {
-
-        return;
-
-    }
-
-
-    state.employees =
-        state.employees.filter(
-            employee =>
-                employee.id !== id
-        );
-
-
-    state.transactions =
-        state.transactions.filter(
-            transaction =>
-                transaction.employeeId !== id
-        );
-
-
-    state.leaves =
-        state.leaves.filter(
-            leave =>
-                leave.employeeId !== id
-        );
-
-
-    save();
-
-    renderAll();
-
-}
-
-
-/* =====================================================
-   ADD TRANSACTION
-===================================================== */
-
-function addTransaction() {
-
-    if (
-        !state.employees.length
-    ) {
-
-        alert(
-            "Please add employees first."
-        );
-
-        return;
-
-    }
-
-
-    openModal(
-
-        "Add Payroll Transaction",
-
-        `
-
-        <div class="form-grid">
-
-
-            <div class="form-field">
-
-                <label>
-                    Employee
-                </label>
-
-                <select
-                    name="employeeId"
-                    required
-                >
-
-                    ${employeeOptions()}
-
-                </select>
-
-            </div>
-
-
-            <div class="form-field">
-
-                <label>
-                    Date
-                </label>
-
-                <input
-                    name="date"
-                    type="date"
-                    value="${
-                        new Date()
-                            .toISOString()
-                            .slice(0, 10)
-                    }"
-                    required
-                >
-
-            </div>
-
-
-            <div class="form-field">
-
-                <label>
-                    Type
-                </label>
-
-                <select
-                    name="type"
-                    required
-                >
-
-                    <option value="salary">
-                        Salary Payment
-                    </option>
-
-                    <option value="advance">
-                        Advance
-                    </option>
-
-                    <option value="loan">
-                        Loan Given
-                    </option>
-
-                    <option value="loan_repayment">
-                        Loan Repayment
-                    </option>
-
-                    <option value="adjustment">
-                        Other Adjustment
-                    </option>
-
-                </select>
-
-            </div>
-
-
-            <div class="form-field">
-
-                <label>
-                    Amount (AED)
-                </label>
-
-                <input
-                    name="amount"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    required
-                >
-
-            </div>
-
-
-            <div class="form-field full">
-
-                <label>
-                    Note
-                </label>
-
-                <input
-                    name="note"
-                    placeholder="Optional note"
-                >
-
-            </div>
-
-
-        </div>
-
-
-        <div class="form-actions">
-
-
-            <button
-                type="button"
-                class="action-btn"
-                onclick="closeModal()"
-            >
-                Cancel
-            </button>
-
-
-            <button
-                type="submit"
-                class="primary"
-            >
-                Save Transaction
-            </button>
-
-
-        </div>
-
-        `,
-
-        formData => {
-
-            const employeeId =
-                formData.get(
-                    "employeeId"
-                );
-
-
-            const date =
-                formData.get(
-                    "date"
-                );
-
-
-            const type =
-                formData.get(
-                    "type"
-                );
-
-
-            const amount =
-                Number(
-                    formData.get(
-                        "amount"
-                    )
-                );
-
-
-            if (
-                amount <= 0
-            ) {
-
-                alert(
-                    "Please enter an amount greater than zero."
-                );
-
-                return;
-
-            }
-
-
-            state.transactions.push({
-
-                id:
-                    generateID("TX"),
-
-                employeeId,
-
-                date,
-
-                type,
-
-                amount,
-
-                note:
-                    formData
-                        .get("note")
-                        .trim()
-
-            });
-
-
-            save();
-
-            closeModal();
-
-            renderAll();
-
-        }
-
-    );
-
-}
-
-
-/* =====================================================
-   DELETE TRANSACTION
-===================================================== */
-
-function deleteTransaction(id) {
-
-    if (
-        !confirm(
-            "Delete this transaction?"
-        )
-    ) {
-
-        return;
-
-    }
-
-
-    state.transactions =
-        state.transactions.filter(
-            transaction =>
-                transaction.id !== id
-        );
-
-
-    save();
-
-    renderAll();
-
-}
-
-
-/* =====================================================
-   ADD LEAVE
-===================================================== */
-
-function addLeave() {
-
-    if (
-        !state.employees.length
-    ) {
-
-        alert(
-            "Please add employees first."
-        );
-
-        return;
-
-    }
-
-
-    openModal(
-
-        "Record Leave",
-
-        `
-
-        <div class="form-grid">
-
-
-            <div class="form-field full">
-
-                <label>
-                    Employee
-                </label>
-
-                <select
-                    name="employeeId"
-                    required
-                >
-
-                    ${employeeOptions()}
-
-                </select>
-
-            </div>
-
-
-            <div class="form-field">
-
-                <label>
-                    Start Date
-                </label>
-
-                <input
-                    name="startDate"
-                    type="date"
-                    required
-                >
-
-            </div>
-
-
-            <div class="form-field">
-
-                <label>
-                    End Date
-                </label>
-
-                <input
-                    name="endDate"
-                    type="date"
-                    required
-                >
-
-            </div>
-
-
-            <div class="form-field">
-
-                <label>
-                    Number of Days
-                </label>
-
-                <input
-                    name="days"
-                    type="number"
-                    min="1"
-                    step="1"
-                    required
-                >
-
-            </div>
-
-
-            <div class="form-field">
-
-                <label>
-                    Reason
-                </label>
-
-                <input
-                    name="reason"
-                    placeholder="Annual leave / sick leave / etc."
-                >
-
-            </div>
-
-
-        </div>
-
-
-        <div class="form-actions">
-
-
-            <button
-                type="button"
-                class="action-btn"
-                onclick="closeModal()"
-            >
-                Cancel
-            </button>
-
-
-            <button
-                type="submit"
-                class="primary"
-            >
-                Save Leave
-            </button>
-
-
-        </div>
-
-        `,
-
-        formData => {
-
-            const startDate =
-                formData.get(
-                    "startDate"
-                );
-
-
-            const endDate =
-                formData.get(
-                    "endDate"
-                );
-
-
-            if (
-                new Date(endDate) <
-                new Date(startDate)
-            ) {
-
-                alert(
-                    "End date cannot be before start date."
-                );
-
-                return;
-
-            }
-
-
-            state.leaves.push({
-
-                id:
-                    generateID("LV"),
-
-                employeeId:
-                    formData.get(
-                        "employeeId"
-                    ),
-
-                startDate,
-
-                endDate,
-
-                days:
-                    Number(
-                        formData.get(
-                            "days"
-                        )
-                    ),
-
-                reason:
-                    formData
-                        .get("reason")
-                        .trim()
-
-            });
-
-
-            save();
-
-            closeModal();
-
-            renderAll();
-
-        }
-
-    );
-
-}
-
-
-/* =====================================================
-   DELETE LEAVE
-===================================================== */
-
-function deleteLeave(id) {
-
-    if (
-        !confirm(
-            "Delete this leave record?"
-        )
-    ) {
-
-        return;
-
-    }
-
-
-    state.leaves =
-        state.leaves.filter(
-            leave =>
-                leave.id !== id
-        );
-
-
-    save();
-
-    renderAll();
-
-}
-
-
-/* =====================================================
-   NAVIGATION
-===================================================== */
-
-document
-    .querySelectorAll(".nav-btn")
-    .forEach(
-        button => {
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    if (
-                        button.id ===
-                        "darkModeBtn"
-                    ) {
-
-                        return;
-
-                    }
-
-
-                    document
-                        .querySelectorAll(
-                            ".nav-btn"
-                        )
-                        .forEach(
-                            btn =>
-                                btn.classList.remove(
-                                    "active"
-                                )
-                        );
-
-
-                    document
-                        .querySelectorAll(
-                            ".section"
-                        )
-                        .forEach(
-                            section =>
-                                section.classList.remove(
-                                    "active"
-                                )
-                        );
-
-
-                    button.classList.add(
-                        "active"
-                    );
-
-
-                    const section =
-                        document.getElementById(
-                            button.dataset.section
-                        );
-
-
-                    if (section) {
-
-                        section.classList.add(
-                            "active"
-                        );
-
-                    }
-
-
-                    if (
-                        $("pageTitle")
-                    ) {
-
-                        const titles = {
-
-                            dashboard:
-                                "Payroll Dashboard",
-
-                            employees:
-                                "Employees",
-
-                            transactions:
-                                "Salary / Advances / Loans",
-
-                            leave:
-                                "Staff Leave",
-
-                            reports:
-                                "Monthly Payroll Report"
-
-                        };
-
-
-                        $("pageTitle").textContent =
-                            titles[
-                                button.dataset.section
-                            ] ||
-                            button.textContent.trim();
-
-                    }
-
-                }
-            );
-
-        }
-    );
-
-
-/* =====================================================
-   BUTTON EVENTS
-===================================================== */
-
-if ($("addEmployeeBtn"))
-    $("addEmployeeBtn").onclick =
-        addEmployee;
-
-
-if ($("addTransactionBtn"))
-    $("addTransactionBtn").onclick =
-        addTransaction;
-
-
-if ($("addLeaveBtn"))
-    $("addLeaveBtn").onclick =
-        addLeave;
-
-
-if ($("dashboardMonth"))
-    $("dashboardMonth").onchange =
-        renderAll;
-
-
-if ($("transactionMonth"))
-    $("transactionMonth").onchange =
-        renderTransactions;
-
-
-if ($("transactionEmployee"))
-    $("transactionEmployee").onchange =
-        renderTransactions;
-
-
-if ($("transactionType"))
-    $("transactionType").onchange =
-        renderTransactions;
-
-
-if ($("reportMonth"))
-    $("reportMonth").onchange =
-        renderReport;
-
-
-if ($("printReportBtn"))
-    $("printReportBtn").onclick =
-        () => {
-
-            window.print();
-
-        };
-
-
-/* =====================================================
-   DIGITAL CLOCK
-===================================================== */
-
-function updateClock() {
-
-    const clock =
-        $("clock");
-
-
-    if (!clock)
-        return;
-
-
-    clock.textContent =
-        new Date().toLocaleString(
-            "en-AE",
-            {
-                dateStyle: "full",
-                timeStyle: "medium"
-            }
+    box-shadow:
+        0 20px 60px rgba(
+            0,
+            0,
+            0,
+            .3
         );
 
 }
 
 
-setInterval(
-    updateClock,
-    1000
-);
+.modal-header {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 18px 20px;
+
+    border-bottom: 1px solid var(--border);
+
+}
 
 
-updateClock();
+.modal-header h2 {
+
+    font-size: 19px;
+
+}
+
+
+.modal-close {
+
+    border: none;
+
+    background: transparent;
+
+    color: var(--text);
+
+    font-size: 27px;
+
+    line-height: 1;
+
+    cursor: pointer;
+
+}
 
 
 /* =====================================================
-   INITIAL MONTHS
+   MODAL FORM
 ===================================================== */
 
-if ($("dashboardMonth"))
-    $("dashboardMonth").value =
-        currentMonth();
+#modalForm {
+
+    padding: 20px;
+
+}
 
 
-if ($("transactionMonth"))
-    $("transactionMonth").value =
-        currentMonth();
+.form-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(
+            2,
+            minmax(0, 1fr)
+        );
+
+    gap: 15px;
+
+}
 
 
-if ($("reportMonth"))
-    $("reportMonth").value =
-        currentMonth();
+.form-field {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 6px;
+
+}
+
+
+.form-field.full {
+
+    grid-column: 1 / -1;
+
+}
+
+
+.form-field label {
+
+    font-size: 12px;
+
+    font-weight: 700;
+
+    color: var(--muted);
+
+}
+
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+
+    width: 100%;
+
+}
+
+
+.form-actions {
+
+    display: flex;
+
+    justify-content: flex-end;
+
+    gap: 10px;
+
+    margin-top: 20px;
+
+    padding-top: 18px;
+
+    border-top: 1px solid var(--border);
+
+}
 
 
 /* =====================================================
    DARK MODE
 ===================================================== */
 
-function updateDarkModeButton() {
+body.dark-mode {
 
-    const button =
-        $("darkModeBtn");
+    --background: #111111;
 
+    --card: #1b1b1b;
 
-    if (!button)
-        return;
+    --text: #eeeeee;
 
+    --muted: #aaaaaa;
 
-    const dark =
-        document.body.classList.contains(
-            "dark-mode"
-        );
+    --border: #333333;
 
+    background: #111111;
 
-    button.innerHTML =
-        dark
-            ? "☀ Light Mode"
-            : "☾ Dark Mode";
+    color: #eeeeee;
 
 }
 
 
-function setDarkMode(
-    enabled
+body.dark-mode .topbar {
+
+    border-color: #333333;
+
+}
+
+
+body.dark-mode .data-table th {
+
+    background: #252525;
+
+    color: #eeeeee;
+
+}
+
+
+body.dark-mode .data-table td {
+
+    border-color: #333333;
+
+}
+
+
+body.dark-mode .data-table tbody tr:hover {
+
+    background: rgba(
+        255,
+        255,
+        255,
+        .035
+    );
+
+}
+
+
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea {
+
+    background: #222222;
+
+    color: #eeeeee;
+
+    border-color: #444444;
+
+}
+
+
+body.dark-mode input::placeholder,
+body.dark-mode textarea::placeholder {
+
+    color: #777777;
+
+}
+
+
+body.dark-mode .action-btn {
+
+    color: #eeeeee;
+
+    border-color: #444444;
+
+}
+
+
+body.dark-mode .action-btn:hover {
+
+    background: #292929;
+
+}
+
+
+body.dark-mode .info-box {
+
+    background: #29230d;
+
+    border-color: #66520c;
+
+}
+
+
+body.dark-mode .info-box strong {
+
+    color: #ffffff;
+
+}
+
+
+body.dark-mode .info-box span {
+
+    color: #cccccc;
+
+}
+
+
+body.dark-mode .print-option:hover {
+
+    background: rgba(
+        252,
+        194,
+        36,
+        .08
+    );
+
+}
+
+
+body.dark-mode .status.paid {
+
+    background: #153b27;
+
+    color: #78d89a;
+
+}
+
+
+body.dark-mode .status.partial {
+
+    background: #4a360f;
+
+    color: #f3c76b;
+
+}
+
+
+body.dark-mode .status.pending {
+
+    background: #481c20;
+
+    color: #ff8e97;
+
+}
+
+
+body.dark-mode .dark-mode-btn {
+
+    background: #fcc224;
+
+    color: #000000;
+
+    border-color: #fcc224;
+
+}
+
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media (
+    max-width: 1100px
 ) {
 
-    if (enabled) {
+    .sidebar {
 
-        document.body.classList.add(
-            "dark-mode"
-        );
-
-
-        localStorage.setItem(
-            DARK_MODE_KEY,
-            "true"
-        );
-
-    } else {
-
-        document.body.classList.remove(
-            "dark-mode"
-        );
-
-
-        localStorage.setItem(
-            DARK_MODE_KEY,
-            "false"
-        );
+        width: 220px;
 
     }
 
 
-    updateDarkModeButton();
+    .main {
+
+        margin-left: 220px;
+
+    }
+
+
+    .nav-btn {
+
+        font-size: 13px;
+
+    }
 
 }
 
 
-function toggleDarkMode() {
+@media (
+    max-width: 800px
+) {
 
-    const dark =
-        document.body.classList.contains(
-            "dark-mode"
-        );
+    .sidebar {
+
+        position: relative;
+
+        width: 100%;
+
+        height: auto;
+
+    }
 
 
-    setDarkMode(
-        !dark
-    );
+    .brand {
+
+        padding: 18px;
+
+    }
+
+
+    .navigation {
+
+        flex-direction: row;
+
+        overflow-x: auto;
+
+        padding: 10px;
+
+    }
+
+
+    .nav-btn {
+
+        min-width: max-content;
+
+        width: auto;
+
+    }
+
+
+    .sidebar-bottom {
+
+        padding: 10px;
+
+        border-top: none;
+
+    }
+
+
+    .dark-mode-btn {
+
+        width: auto;
+
+    }
+
+
+    .main {
+
+        margin-left: 0;
+
+        padding: 0 15px 30px;
+
+    }
+
+
+    .topbar {
+
+        min-height: 75px;
+
+        margin-bottom: 20px;
+
+    }
+
+
+    .topbar-brand {
+
+        display: none;
+
+    }
+
+
+    .section-header {
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+    }
+
+
+    .month-selector,
+    .report-month-selector {
+
+        width: 100%;
+
+    }
+
+
+    .month-selector input,
+    .report-month-selector input {
+
+        flex: 1;
+
+    }
+
+
+    .form-grid {
+
+        grid-template-columns: 1fr;
+
+    }
+
+
+    .form-field.full {
+
+        grid-column: auto;
+
+    }
+
+
+    .print-options-header {
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+    }
+
+
+    .print-button {
+
+        width: 100%;
+
+    }
 
 }
 
 
-const darkModeButton =
-    $("darkModeBtn");
+@media (
+    max-width: 500px
+) {
+
+    .stats-grid {
+
+        grid-template-columns: 1fr;
+
+    }
 
 
-if (darkModeButton) {
+    .report-summary {
 
-    darkModeButton.addEventListener(
-        "click",
-        toggleDarkMode
-    );
+        grid-template-columns: 1fr;
+
+    }
+
+
+    .filter-bar {
+
+        flex-direction: column;
+
+    }
+
+
+    .filter-field {
+
+        width: 100%;
+
+    }
+
+
+    .filter-field input,
+    .filter-field select {
+
+        width: 100%;
+
+    }
 
 }
 
 
 /* =====================================================
-   LOAD DARK MODE
+   PRINT
 ===================================================== */
 
-function loadDarkMode() {
+.print-only {
 
-    const saved =
-        localStorage.getItem(
-            DARK_MODE_KEY
-        );
+    display: none;
+
+}
 
 
-    if (
-        saved === "true"
-    ) {
+@media print {
 
-        document.body.classList.add(
-            "dark-mode"
-        );
 
-    } else {
+    @page {
 
-        document.body.classList.remove(
-            "dark-mode"
-        );
+        size: A4 landscape;
+
+        margin: 12mm;
 
     }
 
 
-    updateDarkModeButton();
+    * {
+
+        box-shadow: none !important;
+
+    }
+
+
+    html,
+    body {
+
+        background: #ffffff !important;
+
+        color: #000000 !important;
+
+    }
+
+
+    body {
+
+        font-family:
+            Arial,
+            Helvetica,
+            sans-serif !important;
+
+    }
+
+
+    .sidebar,
+    .topbar,
+    .section-header,
+    .print-options,
+    .report-summary,
+    .card-header,
+    .modal,
+    .filter-bar,
+    .stats-grid {
+
+        display: none !important;
+
+    }
+
+
+    .main {
+
+        margin: 0 !important;
+
+        padding: 0 !important;
+
+    }
+
+
+    .section {
+
+        display: none !important;
+
+    }
+
+
+    #reports {
+
+        display: block !important;
+
+    }
+
+
+    .report-card {
+
+        display: block !important;
+
+        border: none !important;
+
+        margin: 0 !important;
+
+    }
+
+
+    .table-wrapper {
+
+        overflow: visible !important;
+
+    }
+
+
+    .data-table {
+
+        width: 100% !important;
+
+        border-collapse: collapse !important;
+
+        font-size: 9px !important;
+
+    }
+
+
+    .data-table th {
+
+        background: #eeeeee !important;
+
+        color: #000000 !important;
+
+        border: 1px solid #999999 !important;
+
+        padding: 7px !important;
+
+    }
+
+
+    .data-table td {
+
+        color: #000000 !important;
+
+        border: 1px solid #999999 !important;
+
+        padding: 7px !important;
+
+    }
+
+
+    .status {
+
+        border: 1px solid #777777 !important;
+
+        background: #ffffff !important;
+
+        color: #000000 !important;
+
+    }
+
+
+    .print-only {
+
+        display: block !important;
+
+        text-align: center;
+
+        margin-bottom: 18px;
+
+    }
+
+
+    #printHeader h1 {
+
+        font-size: 22px;
+
+        margin-bottom: 4px;
+
+    }
+
+
+    #printHeader h2 {
+
+        font-size: 16px;
+
+        margin-bottom: 7px;
+
+    }
+
+
+    #printMonth,
+    #printFilter {
+
+        font-size: 11px;
+
+        margin-top: 3px;
+
+    }
+
+
+    .report-note {
+
+        display: none !important;
+
+    }
 
 }
 
 
 /* =====================================================
-   START APPLICATION
+   PRINT ROW FILTER SUPPORT
 ===================================================== */
 
-loadDarkMode();
+@media print {
 
-renderAll();
+    .print-hidden {
+
+        display: none !important;
+
+    }
+
+}
