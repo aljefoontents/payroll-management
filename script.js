@@ -2,6 +2,27 @@
    AL JEFOON TENTS
    PAYROLL SYSTEM
    SCRIPT.JS
+   VERSION 2.0
+
+   FEATURES:
+   - Automatic Employee IDs starting EMP003
+   - Salary + Food Allowance
+   - Salary payments
+   - Partial salary payments
+   - Automatic pending salary calculation
+   - Fully Paid / Partially Paid / Pending status
+   - Advances
+   - Loans
+   - Loan repayments
+   - Staff leave
+   - Monthly reports
+   - Dark mode
+   - LocalStorage
+===================================================== */
+
+
+/* =====================================================
+   STORAGE
 ===================================================== */
 
 const STORAGE_KEY = "alJefoonPayrollV1";
@@ -9,7 +30,7 @@ const DARK_MODE_KEY = "alJefoonPayrollDarkMode";
 
 
 /* =====================================================
-   DEFAULT EMPLOYEES
+   DEFAULT DATA
 ===================================================== */
 
 const DEFAULT_EMPLOYEES = [];
@@ -30,12 +51,8 @@ let state =
 
 
 /* =====================================================
-   HELPERS
+   SAVE DATA
 ===================================================== */
-
-const $ = id =>
-    document.getElementById(id);
-
 
 function save() {
 
@@ -45,6 +62,14 @@ function save() {
     );
 
 }
+
+
+/* =====================================================
+   HELPER
+===================================================== */
+
+const $ = id =>
+    document.getElementById(id);
 
 
 function money(value) {
@@ -62,7 +87,11 @@ function money(value) {
 
 function monthKey(date) {
 
+    if (!date) return "";
+
     const d = new Date(date);
+
+    if (isNaN(d)) return "";
 
     return `${d.getFullYear()}-${String(
         d.getMonth() + 1
@@ -188,7 +217,57 @@ function getNextEmployeeID() {
 
 
 /* =====================================================
-   PAYROLL CALCULATION
+   MONTHLY SALARY CALCULATION
+=====================================================
+
+   IMPORTANT:
+
+   ONLY transactions with type "salary"
+   count as salary payments.
+
+   Advances and loans are NOT counted
+   as salary paid.
+
+===================================================== */
+
+function getMonthlySalaryPayment(
+    employee,
+    month
+) {
+
+    return state.transactions
+        .filter(
+            transaction =>
+
+                transaction.employeeId ===
+                employee.id &&
+
+                transaction.type ===
+                "salary" &&
+
+                monthKey(
+                    transaction.date
+                ) === month
+        )
+        .reduce(
+            (
+                total,
+                transaction
+            ) =>
+
+                total +
+                Number(
+                    transaction.amount || 0
+                ),
+
+            0
+        );
+
+}
+
+
+/* =====================================================
+   MONTHLY PAYROLL CALCULATION
 ===================================================== */
 
 function payrollFor(
@@ -196,106 +275,175 @@ function payrollFor(
     month
 ) {
 
-    const transactions =
-        state.transactions.filter(
-            transaction =>
-
-                transaction.employeeId ===
-                employee.id &&
-
-                monthKey(
-                    transaction.date
-                ) === month
+    const monthlySalary =
+        Number(
+            employee.salary || 0
         );
 
 
-    const salaryPaid =
-        transactions
-            .filter(
-                t =>
-                    t.type === "salary"
-            )
-            .reduce(
-                (total, t) =>
-                    total +
-                    Number(
-                        t.amount || 0
-                    ),
-                0
-            );
-
-
-    const advances =
-        transactions
-            .filter(
-                t =>
-                    t.type === "advance"
-            )
-            .reduce(
-                (total, t) =>
-                    total +
-                    Number(
-                        t.amount || 0
-                    ),
-                0
-            );
-
-
-    const loanRepayments =
-        transactions
-            .filter(
-                t =>
-                    t.type === "loan_repayment"
-            )
-            .reduce(
-                (total, t) =>
-                    total +
-                    Number(
-                        t.amount || 0
-                    ),
-                0
-            );
-
-
-    const adjustments =
-        transactions
-            .filter(
-                t =>
-                    t.type === "adjustment"
-            )
-            .reduce(
-                (total, t) =>
-                    total +
-                    Number(
-                        t.amount || 0
-                    ),
-                0
-            );
-
-
-    const earned =
-        Number(
-            employee.salary || 0
-        ) +
+    const foodAllowance =
         Number(
             employee.food || 0
         );
 
 
-    const deductions =
-        salaryPaid +
-        advances +
-        loanRepayments +
-        adjustments;
+    const monthlyTotal =
+        monthlySalary +
+        foodAllowance;
 
 
-    const remaining =
-        Math.max(
-            0,
-            earned -
-            deductions
+    /* -------------------------------------------------
+       SALARY PAYMENTS
+    ------------------------------------------------- */
+
+    const salaryPaid =
+        getMonthlySalaryPayment(
+            employee,
+            month
         );
 
+
+    /* -------------------------------------------------
+       PENDING SALARY
+    ------------------------------------------------- */
+
+    const pending =
+        Math.max(
+            0,
+            monthlyTotal -
+            salaryPaid
+        );
+
+
+    /* -------------------------------------------------
+       PAYMENT STATUS
+    ------------------------------------------------- */
+
+    let status =
+        "PENDING";
+
+
+    if (
+        salaryPaid >=
+        monthlyTotal &&
+        monthlyTotal > 0
+    ) {
+
+        status =
+            "FULLY PAID";
+
+    } else if (
+        salaryPaid > 0
+    ) {
+
+        status =
+            "PARTIALLY PAID";
+
+    }
+
+
+    /* -------------------------------------------------
+       ADVANCES
+    ------------------------------------------------- */
+
+    const advances =
+        state.transactions
+            .filter(
+                transaction =>
+
+                    transaction.employeeId ===
+                    employee.id &&
+
+                    transaction.type ===
+                    "advance" &&
+
+                    monthKey(
+                        transaction.date
+                    ) === month
+            )
+            .reduce(
+                (
+                    total,
+                    transaction
+                ) =>
+                    total +
+                    Number(
+                        transaction.amount || 0
+                    ),
+
+                0
+            );
+
+
+    /* -------------------------------------------------
+       LOAN REPAYMENTS
+    ------------------------------------------------- */
+
+    const loanRepayments =
+        state.transactions
+            .filter(
+                transaction =>
+
+                    transaction.employeeId ===
+                    employee.id &&
+
+                    transaction.type ===
+                    "loan_repayment" &&
+
+                    monthKey(
+                        transaction.date
+                    ) === month
+            )
+            .reduce(
+                (
+                    total,
+                    transaction
+                ) =>
+                    total +
+                    Number(
+                        transaction.amount || 0
+                    ),
+
+                0
+            );
+
+
+    /* -------------------------------------------------
+       OTHER ADJUSTMENTS
+    ------------------------------------------------- */
+
+    const adjustments =
+        state.transactions
+            .filter(
+                transaction =>
+
+                    transaction.employeeId ===
+                    employee.id &&
+
+                    transaction.type ===
+                    "adjustment" &&
+
+                    monthKey(
+                        transaction.date
+                    ) === month
+            )
+            .reduce(
+                (
+                    total,
+                    transaction
+                ) =>
+                    total +
+                    Number(
+                        transaction.amount || 0
+                    ),
+
+                0
+            );
+
+
+    /* -------------------------------------------------
+       LEAVE DAYS
+    ------------------------------------------------- */
 
     const leaveDays =
         state.leaves
@@ -310,30 +458,41 @@ function payrollFor(
                     ) === month
             )
             .reduce(
-                (total, leave) =>
+                (
+                    total,
+                    leave
+                ) =>
                     total +
                     Number(
                         leave.days || 0
                     ),
+
                 0
             );
 
 
     return {
 
-        earned,
+        salary:
+            monthlySalary,
+
+        food:
+            foodAllowance,
+
+        total:
+            monthlyTotal,
 
         salaryPaid,
+
+        pending,
+
+        status,
 
         advances,
 
         loanRepayments,
 
         adjustments,
-
-        deductions,
-
-        remaining,
 
         leaveDays
 
@@ -397,6 +556,7 @@ function outstandingLoan(
                 return total;
 
             },
+
             0
         );
 
@@ -404,7 +564,52 @@ function outstandingLoan(
 
 
 /* =====================================================
-   RENDER ALL
+   STATUS HTML
+===================================================== */
+
+function statusHTML(
+    status
+) {
+
+    if (
+        status ===
+        "FULLY PAID"
+    ) {
+
+        return `
+            <span class="status paid">
+                FULLY PAID
+            </span>
+        `;
+
+    }
+
+
+    if (
+        status ===
+        "PARTIALLY PAID"
+    ) {
+
+        return `
+            <span class="status partial">
+                PARTIALLY PAID
+            </span>
+        `;
+
+    }
+
+
+    return `
+        <span class="status pending">
+            PENDING
+        </span>
+    `;
+
+}
+
+
+/* =====================================================
+   RENDER EVERYTHING
 ===================================================== */
 
 function renderAll() {
@@ -425,7 +630,7 @@ function renderAll() {
 
 
 /* =====================================================
-   EMPLOYEE SELECTS
+   EMPLOYEE DROPDOWNS
 ===================================================== */
 
 function populateEmployeeSelects() {
@@ -434,7 +639,8 @@ function populateEmployeeSelects() {
         $("transactionEmployee");
 
 
-    if (!select) return;
+    if (!select)
+        return;
 
 
     const currentValue =
@@ -458,6 +664,10 @@ function populateEmployeeSelects() {
                             employee.id
                         )}"
                     >
+                        ${escapeHTML(
+                            employee.id
+                        )}
+                        -
                         ${escapeHTML(
                             employee.name
                         )}
@@ -493,6 +703,10 @@ function employeeOptions(
                     }
                 >
                     ${escapeHTML(
+                        employee.id
+                    )}
+                    -
+                    ${escapeHTML(
                         employee.name
                     )}
                 </option>
@@ -513,7 +727,8 @@ function renderDashboard() {
         $("dashboardMonth");
 
 
-    if (!monthInput) return;
+    if (!monthInput)
+        return;
 
 
     const month =
@@ -537,27 +752,39 @@ function renderDashboard() {
 
     const totalPayroll =
         payroll.reduce(
-            (total, row) =>
+            (
+                total,
+                row
+            ) =>
                 total +
-                row.earned,
+                row.total,
+
             0
         );
 
 
     const totalPaid =
         payroll.reduce(
-            (total, row) =>
+            (
+                total,
+                row
+            ) =>
                 total +
-                row.deductions,
+                row.salaryPaid,
+
             0
         );
 
 
     const totalPending =
         payroll.reduce(
-            (total, row) =>
+            (
+                total,
+                row
+            ) =>
                 total +
-                row.remaining,
+                row.pending,
+
             0
         );
 
@@ -575,6 +802,7 @@ function renderDashboard() {
                         employee
                     )
                 ),
+
             0
         );
 
@@ -583,6 +811,30 @@ function renderDashboard() {
         payroll.filter(
             row =>
                 row.leaveDays > 0
+        ).length;
+
+
+    const fullyPaid =
+        payroll.filter(
+            row =>
+                row.status ===
+                "FULLY PAID"
+        ).length;
+
+
+    const partiallyPaid =
+        payroll.filter(
+            row =>
+                row.status ===
+                "PARTIALLY PAID"
+        ).length;
+
+
+    const pendingEmployees =
+        payroll.filter(
+            row =>
+                row.status ===
+                "PENDING"
         ).length;
 
 
@@ -616,6 +868,21 @@ function renderDashboard() {
             employeesOnLeave;
 
 
+    if ($("statFullyPaid"))
+        $("statFullyPaid").textContent =
+            fullyPaid;
+
+
+    if ($("statPartiallyPaid"))
+        $("statPartiallyPaid").textContent =
+            partiallyPaid;
+
+
+    if ($("statPendingEmployees"))
+        $("statPendingEmployees").textContent =
+            pendingEmployees;
+
+
     if (!$("dashboardTable"))
         return;
 
@@ -626,7 +893,13 @@ function renderDashboard() {
 
             <tr>
 
-                <th>Employee</th>
+                <th>
+                    Employee ID
+                </th>
+
+                <th>
+                    Employee
+                </th>
 
                 <th class="num">
                     Salary
@@ -637,15 +910,19 @@ function renderDashboard() {
                 </th>
 
                 <th class="num">
-                    Total
+                    Monthly Total
                 </th>
 
                 <th class="num">
-                    Paid / Deductions
+                    Paid
                 </th>
 
                 <th class="num">
-                    Remaining
+                    Pending
+                </th>
+
+                <th>
+                    Status
                 </th>
 
                 <th>
@@ -655,6 +932,7 @@ function renderDashboard() {
             </tr>
 
         </thead>
+
 
         <tbody>
 
@@ -684,7 +962,9 @@ function renderDashboard() {
                                                 employee.id
                                             )}
                                         </b>
-                                        -
+                                    </td>
+
+                                    <td>
                                         ${escapeHTML(
                                             employee.name
                                         )}
@@ -692,47 +972,54 @@ function renderDashboard() {
 
                                     <td class="num">
                                         ${money(
-                                            employee.salary
+                                            row.salary
                                         )}
                                     </td>
 
                                     <td class="num">
                                         ${money(
-                                            employee.food
-                                        )}
-                                    </td>
-
-                                    <td class="num">
-                                        ${money(
-                                            row.earned
-                                        )}
-                                    </td>
-
-                                    <td class="num">
-                                        ${money(
-                                            row.deductions
+                                            row.food
                                         )}
                                     </td>
 
                                     <td class="num">
                                         <b>
                                             ${money(
-                                                row.remaining
+                                                row.total
+                                            )}
+                                        </b>
+                                    </td>
+
+                                    <td class="num">
+                                        ${money(
+                                            row.salaryPaid
+                                        )}
+                                    </td>
+
+                                    <td class="num">
+                                        <b>
+                                            ${money(
+                                                row.pending
                                             )}
                                         </b>
                                     </td>
 
                                     <td>
+                                        ${statusHTML(
+                                            row.status
+                                        )}
+                                    </td>
+
+                                    <td>
+
                                         ${
                                             row.leaveDays
                                                 ?
-                                            `<span class="status leave">
-                                                ${row.leaveDays}
-                                                day(s)
-                                            </span>`
+                                            `${row.leaveDays} day(s)`
                                                 :
                                             "-"
                                         }
+
                                     </td>
 
                                 </tr>
@@ -749,7 +1036,7 @@ function renderDashboard() {
                     <tr>
 
                         <td
-                            colspan="7"
+                            colspan="9"
                             class="empty"
                         >
                             No employees added yet.
@@ -767,7 +1054,7 @@ function renderDashboard() {
 
 
 /* =====================================================
-   EMPLOYEES
+   EMPLOYEE TABLE
 ===================================================== */
 
 function renderEmployees() {
@@ -813,6 +1100,7 @@ function renderEmployees() {
             </tr>
 
         </thead>
+
 
         <tbody>
 
@@ -953,7 +1241,10 @@ function renderTransactions() {
     let rows =
         [...state.transactions]
             .sort(
-                (a, b) =>
+                (
+                    a,
+                    b
+                ) =>
                     new Date(b.date) -
                     new Date(a.date)
             );
@@ -999,7 +1290,7 @@ function renderTransactions() {
     const labels = {
 
         salary:
-            "Salary Paid",
+            "Salary Payment",
 
         advance:
             "Advance",
@@ -1022,23 +1313,34 @@ function renderTransactions() {
 
             <tr>
 
-                <th>Date</th>
+                <th>
+                    Date
+                </th>
 
-                <th>Employee</th>
+                <th>
+                    Employee
+                </th>
 
-                <th>Type</th>
+                <th>
+                    Type
+                </th>
 
                 <th class="num">
                     Amount
                 </th>
 
-                <th>Note</th>
+                <th>
+                    Note
+                </th>
 
-                <th>Actions</th>
+                <th>
+                    Actions
+                </th>
 
             </tr>
 
         </thead>
+
 
         <tbody>
 
@@ -1060,17 +1362,20 @@ function renderTransactions() {
                                 </td>
 
                                 <td>
+
                                     <b>
                                         ${escapeHTML(
                                             transaction.employeeId
                                         )}
                                     </b>
+
                                     -
                                     ${escapeHTML(
                                         employeeName(
                                             transaction.employeeId
                                         )
                                     )}
+
                                 </td>
 
                                 <td>
@@ -1085,15 +1390,19 @@ function renderTransactions() {
                                 </td>
 
                                 <td class="num">
+
                                     ${money(
                                         transaction.amount
                                     )}
+
                                 </td>
 
                                 <td>
+
                                     ${escapeHTML(
                                         transaction.note
                                     )}
+
                                 </td>
 
                                 <td>
@@ -1137,7 +1446,7 @@ function renderTransactions() {
 
 
 /* =====================================================
-   LEAVE
+   LEAVE TABLE
 ===================================================== */
 
 function renderLeave() {
@@ -1149,7 +1458,10 @@ function renderLeave() {
     const rows =
         [...state.leaves]
             .sort(
-                (a, b) =>
+                (
+                    a,
+                    b
+                ) =>
                     new Date(
                         b.startDate
                     ) -
@@ -1193,6 +1505,7 @@ function renderLeave() {
 
         </thead>
 
+
         <tbody>
 
             ${
@@ -1207,17 +1520,20 @@ function renderLeave() {
                             <tr>
 
                                 <td>
+
                                     <b>
                                         ${escapeHTML(
                                             leave.employeeId
                                         )}
                                     </b>
+
                                     -
                                     ${escapeHTML(
                                         employeeName(
                                             leave.employeeId
                                         )
                                     )}
+
                                 </td>
 
                                 <td>
@@ -1323,27 +1639,76 @@ function renderReport() {
 
     const totalPayroll =
         rows.reduce(
-            (total, row) =>
+            (
+                total,
+                row
+            ) =>
                 total +
-                row.payroll.earned,
+                row.payroll.total,
+
             0
         );
 
 
     const totalPaid =
         rows.reduce(
-            (total, row) =>
+            (
+                total,
+                row
+            ) =>
                 total +
-                row.payroll.deductions,
+                row.payroll.salaryPaid,
+
             0
         );
 
 
     const totalPending =
         rows.reduce(
-            (total, row) =>
+            (
+                total,
+                row
+            ) =>
                 total +
-                row.payroll.remaining,
+                row.payroll.pending,
+
+            0
+        );
+
+
+    const fullyPaid =
+        rows.filter(
+            row =>
+                row.payroll.status ===
+                "FULLY PAID"
+        ).length;
+
+
+    const partiallyPaid =
+        rows.filter(
+            row =>
+                row.payroll.status ===
+                "PARTIALLY PAID"
+        ).length;
+
+
+    const pendingEmployees =
+        rows.filter(
+            row =>
+                row.payroll.status ===
+                "PENDING"
+        ).length;
+
+
+    const totalAdvances =
+        rows.reduce(
+            (
+                total,
+                row
+            ) =>
+                total +
+                row.payroll.advances,
+
             0
         );
 
@@ -1361,9 +1726,14 @@ function renderReport() {
                         employee
                     )
                 ),
+
             0
         );
 
+
+    /* -------------------------------------------------
+       REPORT SUMMARY
+    ------------------------------------------------- */
 
     if ($("reportSummary")) {
 
@@ -1372,7 +1742,7 @@ function renderReport() {
             <div class="summary-box">
 
                 <span>
-                    Total Payroll
+                    Monthly Payroll
                 </span>
 
                 <strong>
@@ -1387,7 +1757,7 @@ function renderReport() {
             <div class="summary-box">
 
                 <span>
-                    Paid / Deductions
+                    Salary Paid
                 </span>
 
                 <strong>
@@ -1402,12 +1772,66 @@ function renderReport() {
             <div class="summary-box">
 
                 <span>
-                    Pending Salaries
+                    Pending Salary
                 </span>
 
                 <strong>
                     ${money(
                         totalPending
+                    )}
+                </strong>
+
+            </div>
+
+
+            <div class="summary-box">
+
+                <span>
+                    Fully Paid
+                </span>
+
+                <strong>
+                    ${fullyPaid}
+                </strong>
+
+            </div>
+
+
+            <div class="summary-box">
+
+                <span>
+                    Partially Paid
+                </span>
+
+                <strong>
+                    ${partiallyPaid}
+                </strong>
+
+            </div>
+
+
+            <div class="summary-box">
+
+                <span>
+                    Pending
+                </span>
+
+                <strong>
+                    ${pendingEmployees}
+                </strong>
+
+            </div>
+
+
+            <div class="summary-box">
+
+                <span>
+                    Advances
+                </span>
+
+                <strong>
+                    ${money(
+                        totalAdvances
                     )}
                 </strong>
 
@@ -1433,6 +1857,10 @@ function renderReport() {
     }
 
 
+    /* -------------------------------------------------
+       REPORT TABLE
+    ------------------------------------------------- */
+
     if (!$("reportTable"))
         return;
 
@@ -1456,15 +1884,23 @@ function renderReport() {
                 </th>
 
                 <th class="num">
-                    Food
+                    Food Allowance
                 </th>
 
                 <th class="num">
-                    Total
+                    Monthly Total
                 </th>
 
                 <th class="num">
                     Salary Paid
+                </th>
+
+                <th class="num">
+                    Pending
+                </th>
+
+                <th>
+                    Status
                 </th>
 
                 <th class="num">
@@ -1475,14 +1911,6 @@ function renderReport() {
                     Loan Repayment
                 </th>
 
-                <th class="num">
-                    Other
-                </th>
-
-                <th class="num">
-                    Remaining
-                </th>
-
                 <th>
                     Leave
                 </th>
@@ -1490,6 +1918,7 @@ function renderReport() {
             </tr>
 
         </thead>
+
 
         <tbody>
 
@@ -1505,12 +1934,15 @@ function renderReport() {
                             <tr>
 
                                 <td>
+
                                     <b>
                                         ${escapeHTML(
                                             row.employee.id
                                         )}
                                     </b>
+
                                 </td>
+
 
                                 <td>
                                     ${escapeHTML(
@@ -1518,65 +1950,87 @@ function renderReport() {
                                     )}
                                 </td>
 
-                                <td class="num">
-                                    ${money(
-                                        row.employee.salary
-                                    )}
-                                </td>
 
                                 <td class="num">
                                     ${money(
-                                        row.employee.food
+                                        row.payroll.salary
                                     )}
                                 </td>
 
-                                <td class="num">
-                                    ${money(
-                                        row.payroll.earned
-                                    )}
-                                </td>
 
                                 <td class="num">
                                     ${money(
-                                        row.payroll.salaryPaid
+                                        row.payroll.food
                                     )}
                                 </td>
 
-                                <td class="num">
-                                    ${money(
-                                        row.payroll.advances
-                                    )}
-                                </td>
-
-                                <td class="num">
-                                    ${money(
-                                        row.payroll.loanRepayments
-                                    )}
-                                </td>
-
-                                <td class="num">
-                                    ${money(
-                                        row.payroll.adjustments
-                                    )}
-                                </td>
 
                                 <td class="num">
 
                                     <b>
                                         ${money(
-                                            row.payroll.remaining
+                                            row.payroll.total
                                         )}
                                     </b>
 
                                 </td>
+
+
+                                <td class="num">
+
+                                    <b>
+                                        ${money(
+                                            row.payroll.salaryPaid
+                                        )}
+                                    </b>
+
+                                </td>
+
+
+                                <td class="num">
+
+                                    <b>
+                                        ${money(
+                                            row.payroll.pending
+                                        )}
+                                    </b>
+
+                                </td>
+
+
+                                <td>
+
+                                    ${statusHTML(
+                                        row.payroll.status
+                                    )}
+
+                                </td>
+
+
+                                <td class="num">
+
+                                    ${money(
+                                        row.payroll.advances
+                                    )}
+
+                                </td>
+
+
+                                <td class="num">
+
+                                    ${money(
+                                        row.payroll.loanRepayments
+                                    )}
+
+                                </td>
+
 
                                 <td>
 
                                     ${
                                         row.payroll.leaveDays
                                             ?
-                                        row.payroll.leaveDays +
-                                        " day(s)"
+                                        `${row.payroll.leaveDays} day(s)`
                                             :
                                         "-"
                                     }
@@ -1840,9 +2294,9 @@ function addEmployee() {
 
             state.employees.push({
 
-                id: id,
+                id,
 
-                name: name,
+                name,
 
                 salary:
                     Number(
@@ -2163,7 +2617,7 @@ function addTransaction() {
                 >
 
                     <option value="salary">
-                        Salary Paid
+                        Salary Payment
                     </option>
 
                     <option value="advance">
@@ -2247,32 +2701,52 @@ function addTransaction() {
 
         formData => {
 
+            const employeeId =
+                formData.get(
+                    "employeeId"
+                );
+
+
+            const date =
+                formData.get(
+                    "date"
+                );
+
+
+            const type =
+                formData.get(
+                    "type"
+                );
+
+
+            const amount =
+                Number(
+                    formData.get(
+                        "amount"
+                    )
+                );
+
+
+            /* -----------------------------------------
+               IMPORTANT:
+               SALARY PAYMENT IS SEPARATE.
+               ADVANCE AND LOAN DO NOT REDUCE
+               MONTHLY SALARY PENDING.
+            ----------------------------------------- */
+
+
             state.transactions.push({
 
                 id:
                     generateID("TX"),
 
-                employeeId:
-                    formData.get(
-                        "employeeId"
-                    ),
+                employeeId,
 
-                date:
-                    formData.get(
-                        "date"
-                    ),
+                date,
 
-                type:
-                    formData.get(
-                        "type"
-                    ),
+                type,
 
-                amount:
-                    Number(
-                        formData.get(
-                            "amount"
-                        )
-                    ),
+                amount,
 
                 note:
                     formData
@@ -2567,102 +3041,104 @@ function deleteLeave(id) {
 
 document
     .querySelectorAll(".nav-btn")
-    .forEach(button => {
+    .forEach(
+        button => {
 
-        button.addEventListener(
-            "click",
-            () => {
+            button.addEventListener(
+                "click",
+                () => {
 
-                if (
-                    button.id ===
-                    "darkModeBtn"
-                ) {
+                    if (
+                        button.id ===
+                        "darkModeBtn"
+                    ) {
 
-                    return;
+                        return;
 
-                }
-
-
-                document
-                    .querySelectorAll(
-                        ".nav-btn"
-                    )
-                    .forEach(
-                        btn =>
-                            btn.classList.remove(
-                                "active"
-                            )
-                    );
+                    }
 
 
-                document
-                    .querySelectorAll(
-                        ".section"
-                    )
-                    .forEach(
-                        section =>
-                            section.classList.remove(
-                                "active"
-                            )
-                    );
+                    document
+                        .querySelectorAll(
+                            ".nav-btn"
+                        )
+                        .forEach(
+                            btn =>
+                                btn.classList.remove(
+                                    "active"
+                                )
+                        );
 
 
-                button.classList.add(
-                    "active"
-                );
+                    document
+                        .querySelectorAll(
+                            ".section"
+                        )
+                        .forEach(
+                            section =>
+                                section.classList.remove(
+                                    "active"
+                                )
+                        );
 
 
-                const section =
-                    document.getElementById(
-                        button.dataset.section
-                    );
-
-
-                if (section) {
-
-                    section.classList.add(
+                    button.classList.add(
                         "active"
                     );
 
-                }
 
-
-                if (
-                    $("pageTitle")
-                ) {
-
-                    const titles = {
-
-                        dashboard:
-                            "Payroll Dashboard",
-
-                        employees:
-                            "Employees",
-
-                        transactions:
-                            "Salary / Advances / Loans",
-
-                        leave:
-                            "Staff Leave",
-
-                        reports:
-                            "Monthly Payroll Report"
-
-                    };
-
-
-                    $("pageTitle").textContent =
-                        titles[
+                    const section =
+                        document.getElementById(
                             button.dataset.section
-                        ] ||
-                        button.textContent.trim();
+                        );
+
+
+                    if (section) {
+
+                        section.classList.add(
+                            "active"
+                        );
+
+                    }
+
+
+                    if (
+                        $("pageTitle")
+                    ) {
+
+                        const titles = {
+
+                            dashboard:
+                                "Payroll Dashboard",
+
+                            employees:
+                                "Employees",
+
+                            transactions:
+                                "Salary / Advances / Loans",
+
+                            leave:
+                                "Staff Leave",
+
+                            reports:
+                                "Monthly Payroll Report"
+
+                        };
+
+
+                        $("pageTitle").textContent =
+                            titles[
+                                button.dataset.section
+                            ] ||
+                            button.textContent.trim();
+
+                    }
 
                 }
+            );
 
-            }
-        );
-
-    });
+        }
+    );
 
 
 /* =====================================================
@@ -2754,7 +3230,7 @@ updateClock();
 
 
 /* =====================================================
-   MONTH INITIALIZATION
+   INITIAL MONTHS
 ===================================================== */
 
 if ($("dashboardMonth"))
