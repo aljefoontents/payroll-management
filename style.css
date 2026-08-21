@@ -405,6 +405,20 @@ tbody tr:hover {
     color: #c62828;
 }
 
+.status.paid {
+    background: #16a34a;
+    color: #ffffff;
+}
+
+.status.partial {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status.pending {
+    background: #ffe5e5;
+    color: #c62828;
+}
 
 /* =====================================================
    ACTION BUTTONS
