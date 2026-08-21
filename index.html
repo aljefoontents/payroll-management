@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>AL JEFOON TENTS - Payroll</title>
 
@@ -18,30 +21,71 @@
     <aside class="sidebar">
 
         <div class="brand">
-            <div class="brand-name">AL JEFOON TENTS</div>
-            <div class="brand-sub">PAYROLL</div>
+
+            <div class="brand-name">
+                AL JEFOON TENTS
+            </div>
+
+            <div class="brand-sub">
+                PAYROLL
+            </div>
+
         </div>
+
+
+        <!-- =================================================
+             NAVIGATION
+        ================================================== -->
 
         <nav>
 
-            <button class="nav-btn active" data-section="dashboard">
+            <button
+                class="nav-btn active"
+                data-section="dashboard"
+            >
                 Dashboard
             </button>
 
-            <button class="nav-btn" data-section="employees">
+
+            <button
+                class="nav-btn"
+                data-section="employees"
+            >
                 Employees
             </button>
 
-            <button class="nav-btn" data-section="transactions">
+
+            <button
+                class="nav-btn"
+                data-section="transactions"
+            >
                 Salary / Advances / Loans
             </button>
 
-            <button class="nav-btn" data-section="leave">
+
+            <button
+                class="nav-btn"
+                data-section="leave"
+            >
                 Leave
             </button>
 
-            <button class="nav-btn" data-section="reports">
+
+            <button
+                class="nav-btn"
+                data-section="reports"
+            >
                 Monthly Reports
+            </button>
+
+
+            <!-- DARK MODE -->
+
+            <button
+                class="nav-btn dark-mode-btn"
+                id="darkModeBtn"
+            >
+                Dark Mode
             </button>
 
         </nav>
@@ -55,7 +99,10 @@
 
     <main class="main">
 
-        <!-- TOP BAR -->
+
+        <!-- =================================================
+             TOP BAR
+        ================================================== -->
 
         <header class="topbar">
 
@@ -68,6 +115,7 @@
                 <div id="clock"></div>
 
             </div>
+
 
             <button
                 class="primary"
@@ -91,48 +139,89 @@
 
             <div class="cards">
 
-                <div class="card">
-                    <span>Employees</span>
-                    <strong id="statEmployees">0</strong>
-                </div>
 
                 <div class="card">
-                    <span>Monthly Salaries</span>
+
+                    <span>
+                        Employees
+                    </span>
+
+                    <strong id="statEmployees">
+                        0
+                    </strong>
+
+                </div>
+
+
+                <div class="card">
+
+                    <span>
+                        Monthly Salaries
+                    </span>
+
                     <strong id="statSalaries">
                         AED 0.00
                     </strong>
+
                 </div>
 
+
                 <div class="card">
-                    <span>Paid This Month</span>
+
+                    <span>
+                        Paid This Month
+                    </span>
+
                     <strong id="statPaid">
                         AED 0.00
                     </strong>
+
                 </div>
 
+
                 <div class="card">
-                    <span>Pending This Month</span>
+
+                    <span>
+                        Pending This Month
+                    </span>
+
                     <strong id="statPending">
                         AED 0.00
                     </strong>
+
                 </div>
 
+
                 <div class="card">
-                    <span>Outstanding Loans</span>
+
+                    <span>
+                        Outstanding Loans
+                    </span>
+
                     <strong id="statLoans">
                         AED 0.00
                     </strong>
+
                 </div>
 
+
                 <div class="card">
-                    <span>On Leave</span>
+
+                    <span>
+                        On Leave
+                    </span>
+
                     <strong id="statLeave">
                         0
                     </strong>
+
                 </div>
+
 
             </div>
 
+
+            <!-- MONTHLY PAYROLL -->
 
             <div class="panel">
 
@@ -141,6 +230,7 @@
                     <h2>
                         Current Month Payroll
                     </h2>
+
 
                     <input
                         type="month"
@@ -152,7 +242,9 @@
 
                 <div class="table-wrap">
 
-                    <table id="dashboardTable"></table>
+                    <table
+                        id="dashboardTable"
+                    ></table>
 
                 </div>
 
@@ -178,6 +270,7 @@
                         Employees
                     </h2>
 
+
                     <button
                         class="primary"
                         id="addEmployeeBtn"
@@ -190,7 +283,9 @@
 
                 <div class="table-wrap">
 
-                    <table id="employeesTable"></table>
+                    <table
+                        id="employeesTable"
+                    ></table>
 
                 </div>
 
@@ -216,6 +311,7 @@
                         Salary / Advances / Loans
                     </h2>
 
+
                     <button
                         class="primary"
                         id="addTransactionBtn"
@@ -226,7 +322,10 @@
                 </div>
 
 
+                <!-- FILTERS -->
+
                 <div class="filters">
+
 
                     <input
                         type="month"
@@ -253,21 +352,26 @@
                             All Types
                         </option>
 
+
                         <option value="salary">
                             Salary Paid
                         </option>
+
 
                         <option value="advance">
                             Advance
                         </option>
 
+
                         <option value="loan">
                             Loan Given
                         </option>
 
+
                         <option value="loan_repayment">
                             Loan Repayment
                         </option>
+
 
                         <option value="adjustment">
                             Other Adjustment
@@ -280,7 +384,9 @@
 
                 <div class="table-wrap">
 
-                    <table id="transactionsTable"></table>
+                    <table
+                        id="transactionsTable"
+                    ></table>
 
                 </div>
 
@@ -306,6 +412,7 @@
                         Staff Leave
                     </h2>
 
+
                     <button
                         class="primary"
                         id="addLeaveBtn"
@@ -318,7 +425,9 @@
 
                 <div class="table-wrap">
 
-                    <table id="leaveTable"></table>
+                    <table
+                        id="leaveTable"
+                    ></table>
 
                 </div>
 
@@ -352,6 +461,7 @@
                             id="reportMonth"
                         >
 
+
                         <button
                             class="primary"
                             id="printReportBtn"
@@ -364,15 +474,21 @@
                 </div>
 
 
+                <!-- REPORT SUMMARY -->
+
                 <div
                     id="reportSummary"
                     class="report-summary"
                 ></div>
 
 
+                <!-- REPORT TABLE -->
+
                 <div class="table-wrap">
 
-                    <table id="reportTable"></table>
+                    <table
+                        id="reportTable"
+                    ></table>
 
                 </div>
 
@@ -394,18 +510,26 @@
 
         <div class="modal-box">
 
+
             <div class="modal-head">
 
                 <h2 id="modalTitle"></h2>
 
-                <button id="closeModal">
+
+                <button
+                    id="closeModal"
+                    type="button"
+                    aria-label="Close"
+                >
                     ×
                 </button>
 
             </div>
 
 
-            <form id="modalForm"></form>
+            <form
+                id="modalForm"
+            ></form>
 
         </div>
 
