@@ -2480,3 +2480,75 @@ $("reportMonth").value =
 ===================================================== */
 
 renderAll();
+
+/* =====================================================
+   DARK MODE
+===================================================== */
+
+const DARK_MODE_KEY =
+    "alJefoonPayrollDarkMode";
+
+
+function applyDarkMode() {
+
+    const enabled =
+        localStorage.getItem(
+            DARK_MODE_KEY
+        ) === "true";
+
+
+    document.body.classList.toggle(
+        "dark-mode",
+        enabled
+    );
+
+
+    const button =
+        $("darkModeBtn");
+
+
+    if (button) {
+
+        button.textContent =
+            enabled
+                ? "☀ Light Mode"
+                : "Dark Mode";
+
+    }
+
+}
+
+
+function toggleDarkMode() {
+
+    const enabled =
+        !document.body.classList.contains(
+            "dark-mode"
+        );
+
+
+    document.body.classList.toggle(
+        "dark-mode",
+        enabled
+    );
+
+
+    localStorage.setItem(
+        DARK_MODE_KEY,
+        enabled
+    );
+
+
+    $("darkModeBtn").textContent =
+        enabled
+            ? "☀ Light Mode"
+            : "Dark Mode";
+
+}
+
+
+$("darkModeBtn").onclick =
+    toggleDarkMode;
+
+
+applyDarkMode();
