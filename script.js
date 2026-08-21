@@ -13,6 +13,7 @@
    - Leave dates optional
    - Leave days optional
    - Leave counter counts employees with leave records
+   - Employees on leave are excluded from salary reports
    - Dark mode
 ===================================================== */
 
@@ -226,6 +227,118 @@ function getNextEmployeeID() {
 
 
 /* =====================================================
+   CHECK IF EMPLOYEE IS ON LEAVE
+===================================================== */
+
+function isEmployeeOnLeave(
+    employee,
+    month
+) {
+
+    return state.leaves.some(
+        leave => {
+
+            if (
+                leave.employeeId !==
+                employee.id
+            ) {
+
+                return false;
+
+            }
+
+
+            /*
+               If there is no start date,
+               keep the existing behaviour and
+               count the leave under the
+               selected month.
+            */
+
+            if (!leave.startDate) {
+
+                return true;
+
+            }
+
+
+            /*
+               If there is a start date but
+               no end date, match the start
+               date to the selected month.
+            */
+
+            if (!leave.endDate) {
+
+                return (
+                    monthKey(
+                        leave.startDate
+                    ) === month
+                );
+
+            }
+
+
+            /*
+               Leave with both dates:
+               check whether the leave period
+               overlaps the selected month.
+            */
+
+            const [year, monthNumber] =
+                month.split("-").map(Number);
+
+
+            const daysInMonth =
+                new Date(
+                    year,
+                    monthNumber,
+                    0
+                ).getDate();
+
+
+            const leaveStart =
+                new Date(
+                    leave.startDate +
+                    "T00:00:00"
+                );
+
+
+            const leaveEnd =
+                new Date(
+                    leave.endDate +
+                    "T00:00:00"
+                );
+
+
+            const monthStart =
+                new Date(
+                    year,
+                    monthNumber - 1,
+                    1
+                );
+
+
+            const monthEnd =
+                new Date(
+                    year,
+                    monthNumber - 1,
+                    daysInMonth
+                );
+
+
+            return (
+                leaveStart <= monthEnd &&
+                leaveEnd >= monthStart
+            );
+
+        }
+    );
+
+}
+
+
+/* =====================================================
    GET SALARY PAYMENTS FOR MONTH
 ===================================================== */
 
@@ -283,6 +396,24 @@ function payrollFor(
     const foodAllowance =
         Number(
             employee.food || 0
+        );
+
+
+    /* =================================================
+       CHECK IF EMPLOYEE IS ON LEAVE
+
+       Employees on leave are excluded from
+       salary calculations for the selected
+       monthly report.
+
+       Their salary will NOT be counted as
+       fully paid, paid, pending, or due.
+    ================================================= */
+
+    const employeeOnLeave =
+        isEmployeeOnLeave(
+            employee,
+            month
         );
 
 
@@ -561,7 +692,7 @@ function payrollFor(
        Salary payable after unpaid leave.
     */
 
-    const salaryDue =
+    let salaryDue =
         Math.max(
             0,
             basicSalary -
@@ -581,6 +712,21 @@ function payrollFor(
 
 
     /*
+       Employees on leave must be excluded
+       from salary reporting.
+
+       Their salary is therefore set to zero
+       for the selected report.
+    */
+
+    if (employeeOnLeave) {
+
+        salaryDue = 0;
+
+    }
+
+
+    /*
        Pending salary is now calculated from
        the salary remaining after unpaid leave.
     */
@@ -597,7 +743,19 @@ function payrollFor(
         "PENDING";
 
 
-    if (
+    /*
+       IMPORTANT:
+
+       Employees on leave must NEVER be shown
+       as FULLY PAID.
+    */
+
+    if (employeeOnLeave) {
+
+        status =
+            "ON LEAVE";
+
+    } else if (
         salaryDue <= 0
     ) {
 
@@ -721,13 +879,17 @@ function payrollFor(
             salaryDue,
 
         salaryPaid:
-            Math.min(
-                salaryPaid,
-                salaryDue
-            ),
+            employeeOnLeave
+                ? 0
+                : Math.min(
+                    salaryPaid,
+                    salaryDue
+                ),
 
         pending:
-            pendingSalary,
+            employeeOnLeave
+                ? 0
+                : pendingSalary,
 
         status,
 
@@ -737,7 +899,10 @@ function payrollFor(
 
         adjustments,
 
-        leaveDays
+        leaveDays,
+
+        onLeave:
+            employeeOnLeave
 
     };
 
@@ -880,6 +1045,20 @@ function outstandingLoan(
 function statusHTML(
     status
 ) {
+
+    if (
+        status ===
+        "ON LEAVE"
+    ) {
+
+        return `
+            <span class="status leave">
+                ON LEAVE
+            </span>
+        `;
+
+    }
+
 
     if (
         status ===
@@ -1291,7 +1470,9 @@ function renderDashboard() {
 
                                     <td class="num">
                                         ${money(
-                                            row.salary
+                                            row.onLeave
+                                                ? 0
+                                                : row.salary
                                         )}
                                     </td>
 
@@ -2211,7 +2392,9 @@ function renderReport() {
 
                                 <td class="num">
                                     ${money(
-                                        row.payroll.salaryDue
+                                        row.payroll.onLeave
+                                            ? 0
+                                            : row.payroll.salaryDue
                                     )}
                                 </td>
 
