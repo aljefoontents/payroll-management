@@ -286,6 +286,293 @@ function payrollFor(
         );
 
 
+    /* =================================================
+       ACTUAL NUMBER OF DAYS IN SELECTED MONTH
+    ================================================= */
+
+    const [year, monthNumber] =
+        month.split("-").map(Number);
+
+
+    const daysInMonth =
+        new Date(
+            year,
+            monthNumber,
+            0
+        ).getDate();
+
+
+    /* =================================================
+       LEAVE DAYS
+
+       Leave is unpaid.
+
+       If Start Date and End Date exist,
+       actual calendar days are calculated.
+
+       If leave crosses into another month,
+       only the days belonging to the selected
+       month are counted.
+
+       If dates are not available, the existing
+       manually entered leave days are used.
+    ================================================= */
+
+    let leaveDays = 0;
+
+
+    state.leaves
+        .filter(
+            leave => {
+
+                if (
+                    leave.employeeId !==
+                    employee.id
+                ) {
+
+                    return false;
+
+                }
+
+
+                /*
+                   If no start date exists,
+                   keep the existing behaviour and
+                   use the manually entered days.
+                */
+
+                if (!leave.startDate) {
+
+                    return true;
+
+                }
+
+
+                /*
+                   If there is a start date but
+                   no end date, use the existing
+                   manually entered days only if
+                   the start date belongs to the
+                   selected month.
+                */
+
+                if (!leave.endDate) {
+
+                    return (
+                        monthKey(
+                            leave.startDate
+                        ) === month
+                    );
+
+                }
+
+
+                /*
+                   A leave record with both dates
+                   belongs to the selected month if
+                   the leave period overlaps that month.
+                */
+
+                const leaveStart =
+                    new Date(
+                        leave.startDate +
+                        "T00:00:00"
+                    );
+
+
+                const leaveEnd =
+                    new Date(
+                        leave.endDate +
+                        "T00:00:00"
+                    );
+
+
+                const monthStart =
+                    new Date(
+                        year,
+                        monthNumber - 1,
+                        1
+                    );
+
+
+                const monthEnd =
+                    new Date(
+                        year,
+                        monthNumber - 1,
+                        daysInMonth
+                    );
+
+
+                return (
+                    leaveStart <= monthEnd &&
+                    leaveEnd >= monthStart
+                );
+
+            }
+        )
+        .forEach(
+            leave => {
+
+                /*
+                   No start date:
+                   use the existing manually
+                   entered number of days.
+                */
+
+                if (!leave.startDate) {
+
+                    leaveDays +=
+                        Number(
+                            leave.days || 0
+                        );
+
+                    return;
+
+                }
+
+
+                /*
+                   Start date exists but there is
+                   no end date:
+                   use the existing manually
+                   entered days.
+                */
+
+                if (!leave.endDate) {
+
+                    leaveDays +=
+                        Number(
+                            leave.days || 0
+                        );
+
+                    return;
+
+                }
+
+
+                const leaveStart =
+                    new Date(
+                        leave.startDate +
+                        "T00:00:00"
+                    );
+
+
+                const leaveEnd =
+                    new Date(
+                        leave.endDate +
+                        "T00:00:00"
+                    );
+
+
+                const monthStart =
+                    new Date(
+                        year,
+                        monthNumber - 1,
+                        1
+                    );
+
+
+                const monthEnd =
+                    new Date(
+                        year,
+                        monthNumber - 1,
+                        daysInMonth
+                    );
+
+
+                /*
+                   Find the part of the leave
+                   that falls inside this month.
+                */
+
+                const actualStart =
+                    leaveStart >
+                    monthStart
+                        ? leaveStart
+                        : monthStart;
+
+
+                const actualEnd =
+                    leaveEnd <
+                    monthEnd
+                        ? leaveEnd
+                        : monthEnd;
+
+
+                if (
+                    actualStart <=
+                    actualEnd
+                ) {
+
+                    const difference =
+                        actualEnd.getTime() -
+                        actualStart.getTime();
+
+
+                    /*
+                       +1 because both the start
+                       and end date count as leave days.
+                    */
+
+                    const actualDays =
+                        Math.floor(
+                            difference /
+                            (1000 * 60 * 60 * 24)
+                        ) + 1;
+
+
+                    leaveDays +=
+                        actualDays;
+
+                }
+
+            }
+        );
+
+
+    /*
+       Prevent leave days from exceeding
+       the actual number of days in the month.
+    */
+
+    leaveDays =
+        Math.min(
+            leaveDays,
+            daysInMonth
+        );
+
+
+    /* =================================================
+       UNPAID LEAVE SALARY DEDUCTION
+    ================================================= */
+
+    const dailySalary =
+        daysInMonth > 0
+            ? basicSalary / daysInMonth
+            : 0;
+
+
+    const leaveDeduction =
+        dailySalary *
+        leaveDays;
+
+
+    /*
+       Salary payable after unpaid leave.
+    */
+
+    const salaryDue =
+        Math.max(
+            0,
+            basicSalary -
+            leaveDeduction
+        );
+
+
+    /* =================================================
+       SALARY ALREADY PAID
+    ================================================= */
+
     const salaryPaid =
         getMonthlySalaryPaid(
             employee,
@@ -293,10 +580,15 @@ function payrollFor(
         );
 
 
+    /*
+       Pending salary is now calculated from
+       the salary remaining after unpaid leave.
+    */
+
     const pendingSalary =
         Math.max(
             0,
-            basicSalary -
+            salaryDue -
             salaryPaid
         );
 
@@ -306,15 +598,15 @@ function payrollFor(
 
 
     if (
-        basicSalary <= 0
+        salaryDue <= 0
     ) {
 
         status =
-            "PENDING";
+            "FULLY PAID";
 
     } else if (
         salaryPaid >=
-        basicSalary
+        salaryDue
     ) {
 
         status =
@@ -417,70 +709,6 @@ function payrollFor(
             );
 
 
-    /*
-       LEAVE DAYS
-
-       Dates and days are optional.
-       Blank days simply contribute 0.
-    */
-
-    const leaveDays =
-        state.leaves
-            .filter(
-                leave => {
-
-                    if (
-                        leave.employeeId !==
-                        employee.id
-                    ) {
-
-                        return false;
-
-                    }
-
-
-                    /*
-                       If leave has a start date,
-                       use its month.
-                    */
-
-                    if (
-                        leave.startDate
-                    ) {
-
-                        return (
-                            monthKey(
-                                leave.startDate
-                            ) === month
-                        );
-
-                    }
-
-
-                    /*
-                       If there is no date,
-                       treat it as belonging to
-                       the currently selected month.
-                    */
-
-                    return true;
-
-                }
-            )
-            .reduce(
-                (
-                    total,
-                    leave
-                ) =>
-                    total +
-                    Number(
-                        leave.days || 0
-                    ),
-
-                0
-            );
-
-
     return {
 
         salary:
@@ -490,12 +718,12 @@ function payrollFor(
             foodAllowance,
 
         salaryDue:
-            basicSalary,
+            salaryDue,
 
         salaryPaid:
             Math.min(
                 salaryPaid,
-                basicSalary
+                salaryDue
             ),
 
         pending:
