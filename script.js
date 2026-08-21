@@ -867,23 +867,28 @@ function payrollFor(
             );
 
 
-    return {
+   return {
 
-        salary:
-            basicSalary,
+    salary:
+        basicSalary,
 
-        food:
-            foodAllowance,
+    /*
+       IMPORTANT:
 
-        salaryDue:
-            salaryDue,
+       Employees on leave do NOT receive
+       food allowance in the monthly report.
 
-        salaryPaid:
-            employeeOnLeave
-                ? 0
-                : Math.min(
-                    salaryPaid,
-                    salaryDue
+       Their food allowance is therefore
+       automatically shown as AED 0.00.
+    */
+
+    food:
+        employeeOnLeave
+            ? 0
+            : foodAllowance,
+
+    salaryDue:
+        salaryDue,
                 ),
 
         pending:
