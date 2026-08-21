@@ -2,28 +2,18 @@
    AL JEFOON TENTS
    PAYROLL SYSTEM
    SCRIPT.JS
-   VERSION 2.1
+   VERSION 2.2
 
-   IMPORTANT PAYROLL RULE:
-
-   BASIC SALARY IS USED FOR:
-   - Salary Paid
-   - Pending Salary
-   - Fully Paid
-   - Partially Paid
-   - Pending
-
-   FOOD ALLOWANCE IS DISPLAYED SEPARATELY
-   AND IS NOT INCLUDED IN SALARY PAYMENT CALCULATIONS.
-
-   Example:
-
-   Basic Salary:     AED 2,000
-   Food Allowance:   AED   400
-   Salary Paid:      AED   200
-   Pending Salary:   AED 1,800
-
-   Food allowance does NOT make the pending amount AED 2,200.
+   FEATURES:
+   - Employee IDs start at EMP003
+   - Basic salary only used for salary calculations
+   - Food allowance displayed separately
+   - Salary / Advance / Loan editing
+   - Leave editing
+   - Leave dates optional
+   - Leave days optional
+   - Leave counter counts employees with leave records
+   - Dark mode
 ===================================================== */
 
 
@@ -47,6 +37,26 @@ let state =
         transactions: [],
         leaves: []
     };
+
+
+/* =====================================================
+   DATA SAFETY
+===================================================== */
+
+state.employees =
+    Array.isArray(state.employees)
+        ? state.employees
+        : [];
+
+state.transactions =
+    Array.isArray(state.transactions)
+        ? state.transactions
+        : [];
+
+state.leaves =
+    Array.isArray(state.leaves)
+        ? state.leaves
+        : [];
 
 
 /* =====================================================
@@ -217,21 +227,6 @@ function getNextEmployeeID() {
 
 /* =====================================================
    GET SALARY PAYMENTS FOR MONTH
-=====================================================
-
-   ONLY transactions with:
-
-       type === "salary"
-
-   are counted.
-
-   Food allowance is NOT counted.
-
-   Advances are NOT counted.
-
-   Loans are NOT counted.
-
-   Loan repayments are NOT counted.
 ===================================================== */
 
 function getMonthlySalaryPaid(
@@ -279,33 +274,17 @@ function payrollFor(
     month
 ) {
 
-    /* -----------------------------------------------
-       BASIC SALARY
-    ----------------------------------------------- */
-
     const basicSalary =
         Number(
             employee.salary || 0
         );
 
 
-    /* -----------------------------------------------
-       FOOD ALLOWANCE
-       DISPLAY ONLY
-    ----------------------------------------------- */
-
     const foodAllowance =
         Number(
             employee.food || 0
         );
 
-
-    /* -----------------------------------------------
-       SALARY PAID
-
-       IMPORTANT:
-       This only uses salary transactions.
-    ----------------------------------------------- */
 
     const salaryPaid =
         getMonthlySalaryPaid(
@@ -314,21 +293,6 @@ function payrollFor(
         );
 
 
-    /* -----------------------------------------------
-       PENDING SALARY
-
-       FOOD ALLOWANCE IS NOT INCLUDED.
-
-       Example:
-
-       Salary = 2000
-       Food   = 400
-       Paid   = 200
-
-       Pending = 2000 - 200
-               = 1800
-    ----------------------------------------------- */
-
     const pendingSalary =
         Math.max(
             0,
@@ -336,10 +300,6 @@ function payrollFor(
             salaryPaid
         );
 
-
-    /* -----------------------------------------------
-       PAYMENT STATUS
-    ----------------------------------------------- */
 
     let status =
         "PENDING";
@@ -370,10 +330,6 @@ function payrollFor(
     }
 
 
-    /* -----------------------------------------------
-       ADVANCES
-    ----------------------------------------------- */
-
     const advances =
         state.transactions
             .filter(
@@ -402,10 +358,6 @@ function payrollFor(
                 0
             );
 
-
-    /* -----------------------------------------------
-       LOAN REPAYMENTS
-    ----------------------------------------------- */
 
     const loanRepayments =
         state.transactions
@@ -436,10 +388,6 @@ function payrollFor(
             );
 
 
-    /* -----------------------------------------------
-       OTHER ADJUSTMENTS
-    ----------------------------------------------- */
-
     const adjustments =
         state.transactions
             .filter(
@@ -469,21 +417,55 @@ function payrollFor(
             );
 
 
-    /* -----------------------------------------------
+    /*
        LEAVE DAYS
-    ----------------------------------------------- */
+
+       Dates and days are optional.
+       Blank days simply contribute 0.
+    */
 
     const leaveDays =
         state.leaves
             .filter(
-                leave =>
+                leave => {
 
-                    leave.employeeId ===
-                    employee.id &&
+                    if (
+                        leave.employeeId !==
+                        employee.id
+                    ) {
 
-                    monthKey(
+                        return false;
+
+                    }
+
+
+                    /*
+                       If leave has a start date,
+                       use its month.
+                    */
+
+                    if (
                         leave.startDate
-                    ) === month
+                    ) {
+
+                        return (
+                            monthKey(
+                                leave.startDate
+                            ) === month
+                        );
+
+                    }
+
+
+                    /*
+                       If there is no date,
+                       treat it as belonging to
+                       the currently selected month.
+                    */
+
+                    return true;
+
+                }
             )
             .reduce(
                 (
@@ -501,32 +483,22 @@ function payrollFor(
 
     return {
 
-        /* BASIC SALARY */
         salary:
             basicSalary,
 
-        /* FOOD DISPLAY ONLY */
         food:
             foodAllowance,
 
-        /* IMPORTANT:
-           This is the amount against which
-           salary payments are calculated.
-        */
         salaryDue:
             basicSalary,
 
-        /* Salary payments only */
         salaryPaid:
-
             Math.min(
                 salaryPaid,
                 basicSalary
             ),
 
-        /* Remaining basic salary */
         pending:
-
             pendingSalary,
 
         status,
@@ -540,6 +512,73 @@ function payrollFor(
         leaveDays
 
     };
+
+}
+
+
+/* =====================================================
+   EMPLOYEES CURRENTLY ON LEAVE
+=====================================================
+
+   IMPORTANT:
+
+   This does NOT depend on the number of days.
+
+   Example:
+
+   Employee 1 - leave record - days blank
+   Employee 2 - leave record - days blank
+   Employee 3 - leave record - days blank
+
+   Result = 3 employees on leave.
+===================================================== */
+
+function getEmployeesOnLeave(month) {
+
+    const employeeIDs =
+        new Set();
+
+
+    state.leaves.forEach(leave => {
+
+        if (!leave.employeeId)
+            return;
+
+
+        /*
+           If there is a start date,
+           match it to selected month.
+        */
+
+        if (leave.startDate) {
+
+            if (
+                monthKey(
+                    leave.startDate
+                ) !== month
+            ) {
+
+                return;
+
+            }
+
+        }
+
+
+        /*
+           If no date exists,
+           count the leave under
+           the selected month.
+        */
+
+        employeeIDs.add(
+            leave.employeeId
+        );
+
+    });
+
+
+    return employeeIDs.size;
 
 }
 
@@ -793,10 +832,6 @@ function renderDashboard() {
         );
 
 
-    /* -----------------------------------------------
-       TOTAL BASIC SALARIES
-    ----------------------------------------------- */
-
     const totalSalaries =
         payroll.reduce(
             (
@@ -809,11 +844,6 @@ function renderDashboard() {
             0
         );
 
-
-    /* -----------------------------------------------
-       TOTAL FOOD ALLOWANCE
-       SEPARATE FROM SALARIES
-    ----------------------------------------------- */
 
     const totalFood =
         payroll.reduce(
@@ -828,10 +858,6 @@ function renderDashboard() {
         );
 
 
-    /* -----------------------------------------------
-       TOTAL SALARY PAID
-    ----------------------------------------------- */
-
     const totalPaid =
         payroll.reduce(
             (
@@ -845,10 +871,6 @@ function renderDashboard() {
         );
 
 
-    /* -----------------------------------------------
-       TOTAL PENDING SALARY
-    ----------------------------------------------- */
-
     const totalPending =
         payroll.reduce(
             (
@@ -861,10 +883,6 @@ function renderDashboard() {
             0
         );
 
-
-    /* -----------------------------------------------
-       LOANS
-    ----------------------------------------------- */
 
     const totalLoans =
         state.employees.reduce(
@@ -884,20 +902,15 @@ function renderDashboard() {
         );
 
 
-    /* -----------------------------------------------
-       LEAVE
-    ----------------------------------------------- */
+    /*
+       FIXED LEAVE COUNT
+    */
 
     const employeesOnLeave =
-        payroll.filter(
-            row =>
-                row.leaveDays > 0
-        ).length;
+        getEmployeesOnLeave(
+            month
+        );
 
-
-    /* -----------------------------------------------
-       STATUS COUNTS
-    ----------------------------------------------- */
 
     const fullyPaid =
         payroll.filter(
@@ -922,10 +935,6 @@ function renderDashboard() {
                 "PENDING"
         ).length;
 
-
-    /* -----------------------------------------------
-       DASHBOARD CARDS
-    ----------------------------------------------- */
 
     if ($("statEmployees"))
         $("statEmployees").textContent =
@@ -977,10 +986,6 @@ function renderDashboard() {
             money(totalFood);
 
 
-    /* -----------------------------------------------
-       DASHBOARD TABLE
-    ----------------------------------------------- */
-
     if (!$("dashboardTable"))
         return;
 
@@ -991,13 +996,9 @@ function renderDashboard() {
 
             <tr>
 
-                <th>
-                    Employee ID
-                </th>
+                <th>Employee ID</th>
 
-                <th>
-                    Employee
-                </th>
+                <th>Employee</th>
 
                 <th class="num">
                     Basic Salary
@@ -1015,13 +1016,9 @@ function renderDashboard() {
                     Pending Salary
                 </th>
 
-                <th>
-                    Status
-                </th>
+                <th>Status</th>
 
-                <th>
-                    Leave
-                </th>
+                <th>Leave</th>
 
             </tr>
 
@@ -1099,7 +1096,6 @@ function renderDashboard() {
                                     </td>
 
                                     <td>
-
                                         ${
                                             row.leaveDays
                                                 ?
@@ -1107,7 +1103,6 @@ function renderDashboard() {
                                                 :
                                             "-"
                                         }
-
                                     </td>
 
                                 </tr>
@@ -1157,13 +1152,9 @@ function renderEmployees() {
 
             <tr>
 
-                <th>
-                    Employee ID
-                </th>
+                <th>Employee ID</th>
 
-                <th>
-                    Employee
-                </th>
+                <th>Employee</th>
 
                 <th class="num">
                     Basic Salary
@@ -1181,9 +1172,7 @@ function renderEmployees() {
                     Loan Outstanding
                 </th>
 
-                <th>
-                    Actions
-                </th>
+                <th>Actions</th>
 
             </tr>
 
@@ -1299,7 +1288,7 @@ function renderEmployees() {
 
 
 /* =====================================================
-   TRANSACTIONS
+   TRANSACTIONS TABLE
 ===================================================== */
 
 function renderTransactions() {
@@ -1401,29 +1390,19 @@ function renderTransactions() {
 
             <tr>
 
-                <th>
-                    Date
-                </th>
+                <th>Date</th>
 
-                <th>
-                    Employee
-                </th>
+                <th>Employee</th>
 
-                <th>
-                    Type
-                </th>
+                <th>Type</th>
 
                 <th class="num">
                     Amount
                 </th>
 
-                <th>
-                    Note
-                </th>
+                <th>Note</th>
 
-                <th>
-                    Actions
-                </th>
+                <th>Actions</th>
 
             </tr>
 
@@ -1478,22 +1457,25 @@ function renderTransactions() {
                                 </td>
 
                                 <td class="num">
-
                                     ${money(
                                         transaction.amount
                                     )}
-
                                 </td>
 
                                 <td>
-
                                     ${escapeHTML(
                                         transaction.note
                                     )}
-
                                 </td>
 
                                 <td>
+
+                                    <button
+                                        class="action-btn"
+                                        onclick="editTransaction('${transaction.id}')"
+                                    >
+                                        Edit
+                                    </button>
 
                                     <button
                                         class="action-btn"
@@ -1549,13 +1531,21 @@ function renderLeave() {
                 (
                     a,
                     b
-                ) =>
-                    new Date(
-                        b.startDate
-                    ) -
-                    new Date(
+                ) => {
+
+                    const dateA =
                         a.startDate
-                    )
+                            ? new Date(a.startDate)
+                            : new Date(0);
+
+                    const dateB =
+                        b.startDate
+                            ? new Date(b.startDate)
+                            : new Date(0);
+
+                    return dateB - dateA;
+
+                }
             );
 
 
@@ -1565,29 +1555,17 @@ function renderLeave() {
 
             <tr>
 
-                <th>
-                    Employee
-                </th>
+                <th>Employee</th>
 
-                <th>
-                    Start Date
-                </th>
+                <th>Start Date</th>
 
-                <th>
-                    End Date
-                </th>
+                <th>End Date</th>
 
-                <th>
-                    Days
-                </th>
+                <th>Days</th>
 
-                <th>
-                    Reason
-                </th>
+                <th>Reason</th>
 
-                <th>
-                    Actions
-                </th>
+                <th>Actions</th>
 
             </tr>
 
@@ -1625,19 +1603,37 @@ function renderLeave() {
                                 </td>
 
                                 <td>
-                                    ${escapeHTML(
+                                    ${
                                         leave.startDate
-                                    )}
+                                            ?
+                                        escapeHTML(
+                                            leave.startDate
+                                        )
+                                            :
+                                        "-"
+                                    }
                                 </td>
 
                                 <td>
-                                    ${escapeHTML(
+                                    ${
                                         leave.endDate
-                                    )}
+                                            ?
+                                        escapeHTML(
+                                            leave.endDate
+                                        )
+                                            :
+                                        "-"
+                                    }
                                 </td>
 
                                 <td>
-                                    ${leave.days}
+                                    ${
+                                        leave.days
+                                            ?
+                                        leave.days
+                                            :
+                                        "-"
+                                    }
                                 </td>
 
                                 <td>
@@ -1647,6 +1643,13 @@ function renderLeave() {
                                 </td>
 
                                 <td>
+
+                                    <button
+                                        class="action-btn"
+                                        onclick="editLeave('${leave.id}')"
+                                    >
+                                        Edit
+                                    </button>
 
                                     <button
                                         class="action-btn"
@@ -1725,10 +1728,6 @@ function renderReport() {
         );
 
 
-    /* -----------------------------------------------
-       BASIC SALARY TOTAL
-    ----------------------------------------------- */
-
     const totalSalaries =
         rows.reduce(
             (
@@ -1741,11 +1740,6 @@ function renderReport() {
             0
         );
 
-
-    /* -----------------------------------------------
-       FOOD ALLOWANCE TOTAL
-       SEPARATE
-    ----------------------------------------------- */
 
     const totalFood =
         rows.reduce(
@@ -1760,10 +1754,6 @@ function renderReport() {
         );
 
 
-    /* -----------------------------------------------
-       SALARY PAID
-    ----------------------------------------------- */
-
     const totalPaid =
         rows.reduce(
             (
@@ -1777,10 +1767,6 @@ function renderReport() {
         );
 
 
-    /* -----------------------------------------------
-       PENDING BASIC SALARY
-    ----------------------------------------------- */
-
     const totalPending =
         rows.reduce(
             (
@@ -1793,10 +1779,6 @@ function renderReport() {
             0
         );
 
-
-    /* -----------------------------------------------
-       STATUS COUNTS
-    ----------------------------------------------- */
 
     const fullyPaid =
         rows.filter(
@@ -1822,10 +1804,6 @@ function renderReport() {
         ).length;
 
 
-    /* -----------------------------------------------
-       ADVANCES
-    ----------------------------------------------- */
-
     const totalAdvances =
         rows.reduce(
             (
@@ -1838,10 +1816,6 @@ function renderReport() {
             0
         );
 
-
-    /* -----------------------------------------------
-       LOANS
-    ----------------------------------------------- */
 
     const totalLoans =
         state.employees.reduce(
@@ -1861,150 +1835,77 @@ function renderReport() {
         );
 
 
-    /* -----------------------------------------------
-       REPORT SUMMARY
-    ----------------------------------------------- */
-
     if ($("reportSummary")) {
 
         $("reportSummary").innerHTML = `
 
             <div class="summary-box">
-
-                <span>
-                    Total Basic Salaries
-                </span>
-
+                <span>Total Basic Salaries</span>
                 <strong>
-                    ${money(
-                        totalSalaries
-                    )}
+                    ${money(totalSalaries)}
                 </strong>
-
             </div>
 
-
             <div class="summary-box">
-
-                <span>
-                    Food Allowance
-                </span>
-
+                <span>Food Allowance</span>
                 <strong>
-                    ${money(
-                        totalFood
-                    )}
+                    ${money(totalFood)}
                 </strong>
-
             </div>
 
-
             <div class="summary-box">
-
-                <span>
-                    Salary Paid
-                </span>
-
+                <span>Salary Paid</span>
                 <strong>
-                    ${money(
-                        totalPaid
-                    )}
+                    ${money(totalPaid)}
                 </strong>
-
             </div>
 
-
             <div class="summary-box">
-
-                <span>
-                    Pending Salary
-                </span>
-
+                <span>Pending Salary</span>
                 <strong>
-                    ${money(
-                        totalPending
-                    )}
+                    ${money(totalPending)}
                 </strong>
-
             </div>
 
-
             <div class="summary-box">
-
-                <span>
-                    Fully Paid
-                </span>
-
+                <span>Fully Paid</span>
                 <strong>
                     ${fullyPaid}
                 </strong>
-
             </div>
 
-
             <div class="summary-box">
-
-                <span>
-                    Partially Paid
-                </span>
-
+                <span>Partially Paid</span>
                 <strong>
                     ${partiallyPaid}
                 </strong>
-
             </div>
 
-
             <div class="summary-box">
-
-                <span>
-                    Pending
-                </span>
-
+                <span>Pending</span>
                 <strong>
                     ${pendingEmployees}
                 </strong>
-
             </div>
 
-
             <div class="summary-box">
-
-                <span>
-                    Advances
-                </span>
-
+                <span>Advances</span>
                 <strong>
-                    ${money(
-                        totalAdvances
-                    )}
+                    ${money(totalAdvances)}
                 </strong>
-
             </div>
 
-
             <div class="summary-box">
-
-                <span>
-                    Outstanding Loans
-                </span>
-
+                <span>Outstanding Loans</span>
                 <strong>
-                    ${money(
-                        totalLoans
-                    )}
+                    ${money(totalLoans)}
                 </strong>
-
             </div>
 
         `;
 
     }
 
-
-    /* -----------------------------------------------
-       REPORT TABLE
-    ----------------------------------------------- */
 
     if (!$("reportTable"))
         return;
@@ -2016,13 +1917,9 @@ function renderReport() {
 
             <tr>
 
-                <th>
-                    Employee ID
-                </th>
+                <th>Employee ID</th>
 
-                <th>
-                    Employee
-                </th>
+                <th>Employee</th>
 
                 <th class="num">
                     Basic Salary
@@ -2040,9 +1937,7 @@ function renderReport() {
                     Pending Salary
                 </th>
 
-                <th>
-                    Status
-                </th>
+                <th>Status</th>
 
                 <th class="num">
                     Advances
@@ -2052,9 +1947,7 @@ function renderReport() {
                     Loan Repayment
                 </th>
 
-                <th>
-                    Leave
-                </th>
+                <th>Leave</th>
 
             </tr>
 
@@ -2075,15 +1968,12 @@ function renderReport() {
                             <tr>
 
                                 <td>
-
                                     <b>
                                         ${escapeHTML(
                                             row.employee.id
                                         )}
                                     </b>
-
                                 </td>
-
 
                                 <td>
                                     ${escapeHTML(
@@ -2091,76 +1981,53 @@ function renderReport() {
                                     )}
                                 </td>
 
-
                                 <td class="num">
-
                                     ${money(
                                         row.payroll.salaryDue
                                     )}
-
                                 </td>
 
-
                                 <td class="num">
-
                                     ${money(
                                         row.payroll.food
                                     )}
-
                                 </td>
 
-
                                 <td class="num">
-
                                     <b>
                                         ${money(
                                             row.payroll.salaryPaid
                                         )}
                                     </b>
-
                                 </td>
 
-
                                 <td class="num">
-
                                     <b>
                                         ${money(
                                             row.payroll.pending
                                         )}
                                     </b>
-
                                 </td>
 
-
                                 <td>
-
                                     ${statusHTML(
                                         row.payroll.status
                                     )}
-
                                 </td>
 
-
                                 <td class="num">
-
                                     ${money(
                                         row.payroll.advances
                                     )}
-
                                 </td>
 
-
                                 <td class="num">
-
                                     ${money(
                                         row.payroll.loanRepayments
                                     )}
-
                                 </td>
 
-
                                 <td>
-
                                     ${
                                         row.payroll.leaveDays
                                             ?
@@ -2168,7 +2035,6 @@ function renderReport() {
                                             :
                                         "-"
                                     }
-
                                 </td>
 
                             </tr>
@@ -2302,7 +2168,6 @@ function addEmployee() {
 
         <div class="form-grid">
 
-
             <div class="form-field">
 
                 <label>
@@ -2373,12 +2238,10 @@ function addEmployee() {
 
             </div>
 
-
         </div>
 
 
         <div class="form-actions">
-
 
             <button
                 type="button"
@@ -2388,14 +2251,12 @@ function addEmployee() {
                 Cancel
             </button>
 
-
             <button
                 type="submit"
                 class="primary"
             >
                 Save Employee
             </button>
-
 
         </div>
 
@@ -2484,7 +2345,6 @@ function editEmployee(id) {
 
         <div class="form-grid">
 
-
             <div class="form-field">
 
                 <label>
@@ -2553,12 +2413,10 @@ function editEmployee(id) {
 
             </div>
 
-
         </div>
 
 
         <div class="form-actions">
-
 
             <button
                 type="button"
@@ -2568,14 +2426,12 @@ function editEmployee(id) {
                 Cancel
             </button>
 
-
             <button
                 type="submit"
                 class="primary"
             >
                 Save Changes
             </button>
-
 
         </div>
 
@@ -2674,6 +2530,230 @@ function deleteEmployee(id) {
 
 
 /* =====================================================
+   TRANSACTION FORM HTML
+===================================================== */
+
+function transactionFormHTML(
+    transaction = null
+) {
+
+    const today =
+        new Date()
+            .toISOString()
+            .slice(0, 10);
+
+
+    const employeeId =
+        transaction
+            ? transaction.employeeId
+            : "";
+
+
+    const date =
+        transaction
+            ? transaction.date
+            : today;
+
+
+    const type =
+        transaction
+            ? transaction.type
+            : "salary";
+
+
+    const amount =
+        transaction
+            ? transaction.amount
+            : "";
+
+
+    const note =
+        transaction
+            ? transaction.note || ""
+            : "";
+
+
+    return `
+
+        <div class="form-grid">
+
+            <div class="form-field">
+
+                <label>
+                    Employee
+                </label>
+
+                <select
+                    name="employeeId"
+                    required
+                >
+
+                    ${employeeOptions(
+                        employeeId
+                    )}
+
+                </select>
+
+            </div>
+
+
+            <div class="form-field">
+
+                <label>
+                    Date
+                </label>
+
+                <input
+                    name="date"
+                    type="date"
+                    value="${escapeHTML(
+                        date
+                    )}"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-field">
+
+                <label>
+                    Type
+                </label>
+
+                <select
+                    name="type"
+                    required
+                >
+
+                    <option
+                        value="salary"
+                        ${
+                            type === "salary"
+                                ? "selected"
+                                : ""
+                        }
+                    >
+                        Salary Payment
+                    </option>
+
+                    <option
+                        value="advance"
+                        ${
+                            type === "advance"
+                                ? "selected"
+                                : ""
+                        }
+                    >
+                        Advance
+                    </option>
+
+                    <option
+                        value="loan"
+                        ${
+                            type === "loan"
+                                ? "selected"
+                                : ""
+                        }
+                    >
+                        Loan Given
+                    </option>
+
+                    <option
+                        value="loan_repayment"
+                        ${
+                            type === "loan_repayment"
+                                ? "selected"
+                                : ""
+                        }
+                    >
+                        Loan Repayment
+                    </option>
+
+                    <option
+                        value="adjustment"
+                        ${
+                            type === "adjustment"
+                                ? "selected"
+                                : ""
+                        }
+                    >
+                        Other Adjustment
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-field">
+
+                <label>
+                    Amount (AED)
+                </label>
+
+                <input
+                    name="amount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value="${escapeHTML(
+                        amount
+                    )}"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-field full">
+
+                <label>
+                    Note
+                </label>
+
+                <input
+                    name="note"
+                    value="${escapeHTML(
+                        note
+                    )}"
+                    placeholder="Optional note"
+                >
+
+            </div>
+
+        </div>
+
+
+        <div class="form-actions">
+
+            <button
+                type="button"
+                class="action-btn"
+                onclick="closeModal()"
+            >
+                Cancel
+            </button>
+
+            <button
+                type="submit"
+                class="primary"
+            >
+                ${
+                    transaction
+                        ? "Save Changes"
+                        : "Save Transaction"
+                }
+            </button>
+
+        </div>
+
+    `;
+
+}
+
+
+/* =====================================================
    ADD TRANSACTION
 ===================================================== */
 
@@ -2696,142 +2776,7 @@ function addTransaction() {
 
         "Add Payroll Transaction",
 
-        `
-
-        <div class="form-grid">
-
-
-            <div class="form-field">
-
-                <label>
-                    Employee
-                </label>
-
-                <select
-                    name="employeeId"
-                    required
-                >
-
-                    ${employeeOptions()}
-
-                </select>
-
-            </div>
-
-
-            <div class="form-field">
-
-                <label>
-                    Date
-                </label>
-
-                <input
-                    name="date"
-                    type="date"
-                    value="${
-                        new Date()
-                            .toISOString()
-                            .slice(0, 10)
-                    }"
-                    required
-                >
-
-            </div>
-
-
-            <div class="form-field">
-
-                <label>
-                    Type
-                </label>
-
-                <select
-                    name="type"
-                    required
-                >
-
-                    <option value="salary">
-                        Salary Payment
-                    </option>
-
-                    <option value="advance">
-                        Advance
-                    </option>
-
-                    <option value="loan">
-                        Loan Given
-                    </option>
-
-                    <option value="loan_repayment">
-                        Loan Repayment
-                    </option>
-
-                    <option value="adjustment">
-                        Other Adjustment
-                    </option>
-
-                </select>
-
-            </div>
-
-
-            <div class="form-field">
-
-                <label>
-                    Amount (AED)
-                </label>
-
-                <input
-                    name="amount"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    required
-                >
-
-            </div>
-
-
-            <div class="form-field full">
-
-                <label>
-                    Note
-                </label>
-
-                <input
-                    name="note"
-                    placeholder="Optional note"
-                >
-
-            </div>
-
-
-        </div>
-
-
-        <div class="form-actions">
-
-
-            <button
-                type="button"
-                class="action-btn"
-                onclick="closeModal()"
-            >
-                Cancel
-            </button>
-
-
-            <button
-                type="submit"
-                class="primary"
-            >
-                Save Transaction
-            </button>
-
-
-        </div>
-
-        `,
+        transactionFormHTML(),
 
         formData => {
 
@@ -2909,6 +2854,107 @@ function addTransaction() {
 
 
 /* =====================================================
+   EDIT TRANSACTION
+===================================================== */
+
+function editTransaction(id) {
+
+    const transaction =
+        state.transactions.find(
+            item =>
+                item.id === id
+        );
+
+
+    if (!transaction)
+        return;
+
+
+    openModal(
+
+        "Edit Payroll Transaction",
+
+        transactionFormHTML(
+            transaction
+        ),
+
+        formData => {
+
+            const employeeId =
+                formData.get(
+                    "employeeId"
+                );
+
+
+            const date =
+                formData.get(
+                    "date"
+                );
+
+
+            const type =
+                formData.get(
+                    "type"
+                );
+
+
+            const amount =
+                Number(
+                    formData.get(
+                        "amount"
+                    )
+                );
+
+
+            if (
+                amount <= 0
+            ) {
+
+                alert(
+                    "Please enter an amount greater than zero."
+                );
+
+                return;
+
+            }
+
+
+            transaction.employeeId =
+                employeeId;
+
+
+            transaction.date =
+                date;
+
+
+            transaction.type =
+                type;
+
+
+            transaction.amount =
+                amount;
+
+
+            transaction.note =
+                formData
+                    .get("note")
+                    .trim();
+
+
+            save();
+
+            closeModal();
+
+            renderAll();
+
+        }
+
+    );
+
+}
+
+
+/* =====================================================
    DELETE TRANSACTION
 ===================================================== */
 
@@ -2940,6 +2986,177 @@ function deleteTransaction(id) {
 
 
 /* =====================================================
+   LEAVE FORM HTML
+===================================================== */
+
+function leaveFormHTML(
+    leave = null
+) {
+
+    const employeeId =
+        leave
+            ? leave.employeeId
+            : "";
+
+
+    const startDate =
+        leave
+            ? leave.startDate || ""
+            : "";
+
+
+    const endDate =
+        leave
+            ? leave.endDate || ""
+            : "";
+
+
+    const days =
+        leave
+            ? leave.days || ""
+            : "";
+
+
+    const reason =
+        leave
+            ? leave.reason || ""
+            : "";
+
+
+    return `
+
+        <div class="form-grid">
+
+            <div class="form-field full">
+
+                <label>
+                    Employee
+                </label>
+
+                <select
+                    name="employeeId"
+                    required
+                >
+
+                    ${employeeOptions(
+                        employeeId
+                    )}
+
+                </select>
+
+            </div>
+
+
+            <div class="form-field">
+
+                <label>
+                    Start Date
+                    <span style="opacity:.6">
+                        (Optional)
+                    </span>
+                </label>
+
+                <input
+                    name="startDate"
+                    type="date"
+                    value="${escapeHTML(
+                        startDate
+                    )}"
+                >
+
+            </div>
+
+
+            <div class="form-field">
+
+                <label>
+                    End Date
+                    <span style="opacity:.6">
+                        (Optional)
+                    </span>
+                </label>
+
+                <input
+                    name="endDate"
+                    type="date"
+                    value="${escapeHTML(
+                        endDate
+                    )}"
+                >
+
+            </div>
+
+
+            <div class="form-field">
+
+                <label>
+                    Number of Days
+                    <span style="opacity:.6">
+                        (Optional)
+                    </span>
+                </label>
+
+                <input
+                    name="days"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value="${escapeHTML(
+                        days
+                    )}"
+                >
+
+            </div>
+
+
+            <div class="form-field">
+
+                <label>
+                    Reason
+                </label>
+
+                <input
+                    name="reason"
+                    value="${escapeHTML(
+                        reason
+                    )}"
+                    placeholder="Annual leave / sick leave / etc."
+                >
+
+            </div>
+
+        </div>
+
+
+        <div class="form-actions">
+
+            <button
+                type="button"
+                class="action-btn"
+                onclick="closeModal()"
+            >
+                Cancel
+            </button>
+
+            <button
+                type="submit"
+                class="primary"
+            >
+                ${
+                    leave
+                        ? "Save Changes"
+                        : "Save Leave"
+                }
+            </button>
+
+        </div>
+
+    `;
+
+}
+
+
+/* =====================================================
    ADD LEAVE
 ===================================================== */
 
@@ -2962,116 +3179,7 @@ function addLeave() {
 
         "Record Leave",
 
-        `
-
-        <div class="form-grid">
-
-
-            <div class="form-field full">
-
-                <label>
-                    Employee
-                </label>
-
-                <select
-                    name="employeeId"
-                    required
-                >
-
-                    ${employeeOptions()}
-
-                </select>
-
-            </div>
-
-
-            <div class="form-field">
-
-                <label>
-                    Start Date
-                </label>
-
-                <input
-                    name="startDate"
-                    type="date"
-                    required
-                >
-
-            </div>
-
-
-            <div class="form-field">
-
-                <label>
-                    End Date
-                </label>
-
-                <input
-                    name="endDate"
-                    type="date"
-                    required
-                >
-
-            </div>
-
-
-            <div class="form-field">
-
-                <label>
-                    Number of Days
-                </label>
-
-                <input
-                    name="days"
-                    type="number"
-                    min="1"
-                    step="1"
-                    required
-                >
-
-            </div>
-
-
-            <div class="form-field">
-
-                <label>
-                    Reason
-                </label>
-
-                <input
-                    name="reason"
-                    placeholder="Annual leave / sick leave / etc."
-                >
-
-            </div>
-
-
-        </div>
-
-
-        <div class="form-actions">
-
-
-            <button
-                type="button"
-                class="action-btn"
-                onclick="closeModal()"
-            >
-                Cancel
-            </button>
-
-
-            <button
-                type="submit"
-                class="primary"
-            >
-                Save Leave
-            </button>
-
-
-        </div>
-
-        `,
+        leaveFormHTML(),
 
         formData => {
 
@@ -3087,7 +3195,14 @@ function addLeave() {
                 );
 
 
+            /*
+               Only validate dates if
+               BOTH dates were entered.
+            */
+
             if (
+                startDate &&
+                endDate &&
                 new Date(endDate) <
                 new Date(startDate)
             ) {
@@ -3101,6 +3216,12 @@ function addLeave() {
             }
 
 
+            const daysValue =
+                formData.get(
+                    "days"
+                );
+
+
             state.leaves.push({
 
                 id:
@@ -3111,16 +3232,16 @@ function addLeave() {
                         "employeeId"
                     ),
 
-                startDate,
+                startDate:
+                    startDate || "",
 
-                endDate,
+                endDate:
+                    endDate || "",
 
                 days:
-                    Number(
-                        formData.get(
-                            "days"
-                        )
-                    ),
+                    daysValue
+                        ? Number(daysValue)
+                        : 0,
 
                 reason:
                     formData
@@ -3128,6 +3249,111 @@ function addLeave() {
                         .trim()
 
             });
+
+
+            save();
+
+            closeModal();
+
+            renderAll();
+
+        }
+
+    );
+
+}
+
+
+/* =====================================================
+   EDIT LEAVE
+===================================================== */
+
+function editLeave(id) {
+
+    const leave =
+        state.leaves.find(
+            item =>
+                item.id === id
+        );
+
+
+    if (!leave)
+        return;
+
+
+    openModal(
+
+        "Edit Leave",
+
+        leaveFormHTML(
+            leave
+        ),
+
+        formData => {
+
+            const startDate =
+                formData.get(
+                    "startDate"
+                );
+
+
+            const endDate =
+                formData.get(
+                    "endDate"
+                );
+
+
+            /*
+               Only validate when both
+               dates are present.
+            */
+
+            if (
+                startDate &&
+                endDate &&
+                new Date(endDate) <
+                new Date(startDate)
+            ) {
+
+                alert(
+                    "End date cannot be before start date."
+                );
+
+                return;
+
+            }
+
+
+            const daysValue =
+                formData.get(
+                    "days"
+                );
+
+
+            leave.employeeId =
+                formData.get(
+                    "employeeId"
+                );
+
+
+            leave.startDate =
+                startDate || "";
+
+
+            leave.endDate =
+                endDate || "";
+
+
+            leave.days =
+                daysValue
+                    ? Number(daysValue)
+                    : 0;
+
+
+            leave.reason =
+                formData
+                    .get("reason")
+                    .trim();
 
 
             save();
