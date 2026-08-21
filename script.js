@@ -12,24 +12,7 @@ const DARK_MODE_KEY = "alJefoonPayrollDarkMode";
    DEFAULT EMPLOYEES
 ===================================================== */
 
-const DEFAULT_EMPLOYEES = [
-
-    /*
-    Add employees here only if you want
-    them preloaded into a fresh installation.
-
-    Example:
-
-    {
-        id: "AJT001",
-        name: "Employee Name",
-        salary: 2500,
-        food: 300
-    }
-
-    */
-
-];
+const DEFAULT_EMPLOYEES = [];
 
 
 /* =====================================================
@@ -39,8 +22,7 @@ const DEFAULT_EMPLOYEES = [
 let state =
     JSON.parse(
         localStorage.getItem(STORAGE_KEY) || "null"
-    ) ||
-    {
+    ) || {
         employees: DEFAULT_EMPLOYEES,
         transactions: [],
         leaves: []
@@ -106,13 +88,11 @@ function escapeHTML(value) {
         .replace(/[&<>"']/g, character => {
 
             const entities = {
-
                 "&": "&amp;",
                 "<": "&lt;",
                 ">": "&gt;",
                 '"': "&quot;",
                 "'": "&#039;"
-
             };
 
             return entities[character];
@@ -159,19 +139,19 @@ function generateID(prefix) {
 
 /* =====================================================
    AUTO EMPLOYEE ID
-   FORMAT: AJT001, AJT002, AJT003...
+   STARTS AT EMP003
 ===================================================== */
 
 function getNextEmployeeID() {
 
-    let highestNumber = 0;
+    let highestNumber = 2;
 
 
     state.employees.forEach(employee => {
 
         const match =
             String(employee.id || "")
-                .match(/^AJT(\d+)$/i);
+                .match(/^EMP(\d+)$/i);
 
 
         if (match) {
@@ -198,7 +178,7 @@ function getNextEmployeeID() {
 
 
     return (
-        "AJT" +
+        "EMP" +
         String(
             highestNumber + 1
         ).padStart(3, "0")
@@ -209,18 +189,6 @@ function getNextEmployeeID() {
 
 /* =====================================================
    PAYROLL CALCULATION
-=====================================================
-
-Monthly Total =
-Salary + Food Allowance
-
-Remaining =
-Monthly Total
-- Salary Paid
-- Advances
-- Loan Repayments
-- Other Adjustments
-
 ===================================================== */
 
 function payrollFor(
@@ -245,8 +213,7 @@ function payrollFor(
         transactions
             .filter(
                 t =>
-                    t.type ===
-                    "salary"
+                    t.type === "salary"
             )
             .reduce(
                 (total, t) =>
@@ -262,8 +229,7 @@ function payrollFor(
         transactions
             .filter(
                 t =>
-                    t.type ===
-                    "advance"
+                    t.type === "advance"
             )
             .reduce(
                 (total, t) =>
@@ -279,8 +245,7 @@ function payrollFor(
         transactions
             .filter(
                 t =>
-                    t.type ===
-                    "loan_repayment"
+                    t.type === "loan_repayment"
             )
             .reduce(
                 (total, t) =>
@@ -296,8 +261,7 @@ function payrollFor(
         transactions
             .filter(
                 t =>
-                    t.type ===
-                    "adjustment"
+                    t.type === "adjustment"
             )
             .reduce(
                 (total, t) =>
@@ -440,7 +404,7 @@ function outstandingLoan(
 
 
 /* =====================================================
-   RENDER EVERYTHING
+   RENDER ALL
 ===================================================== */
 
 function renderAll() {
@@ -461,7 +425,7 @@ function renderAll() {
 
 
 /* =====================================================
-   EMPLOYEE SELECT
+   EMPLOYEE SELECTS
 ===================================================== */
 
 function populateEmployeeSelects() {
@@ -509,10 +473,6 @@ function populateEmployeeSelects() {
 }
 
 
-/* =====================================================
-   EMPLOYEE OPTIONS
-===================================================== */
-
 function employeeOptions(
     selected = ""
 ) {
@@ -527,8 +487,7 @@ function employeeOptions(
                         employee.id
                     )}"
                     ${
-                        employee.id ===
-                        selected
+                        employee.id === selected
                             ? "selected"
                             : ""
                     }
@@ -627,36 +586,38 @@ function renderDashboard() {
         ).length;
 
 
-    $("statEmployees").textContent =
-        state.employees.length;
+    if ($("statEmployees"))
+        $("statEmployees").textContent =
+            state.employees.length;
 
 
-    $("statSalaries").textContent =
-        money(
-            totalPayroll
-        );
+    if ($("statSalaries"))
+        $("statSalaries").textContent =
+            money(totalPayroll);
 
 
-    $("statPaid").textContent =
-        money(
-            totalPaid
-        );
+    if ($("statPaid"))
+        $("statPaid").textContent =
+            money(totalPaid);
 
 
-    $("statPending").textContent =
-        money(
-            totalPending
-        );
+    if ($("statPending"))
+        $("statPending").textContent =
+            money(totalPending);
 
 
-    $("statLoans").textContent =
-        money(
-            totalLoans
-        );
+    if ($("statLoans"))
+        $("statLoans").textContent =
+            money(totalLoans);
 
 
-    $("statLeave").textContent =
-        employeesOnLeave;
+    if ($("statLeave"))
+        $("statLeave").textContent =
+            employeesOnLeave;
+
+
+    if (!$("dashboardTable"))
+        return;
 
 
     $("dashboardTable").innerHTML = `
@@ -710,9 +671,7 @@ function renderDashboard() {
                         ) => {
 
                             const row =
-                                payroll[
-                                    index
-                                ];
+                                payroll[index];
 
 
                             return `
@@ -720,6 +679,12 @@ function renderDashboard() {
                                 <tr>
 
                                     <td>
+                                        <b>
+                                            ${escapeHTML(
+                                                employee.id
+                                            )}
+                                        </b>
+                                        -
                                         ${escapeHTML(
                                             employee.name
                                         )}
@@ -802,10 +767,14 @@ function renderDashboard() {
 
 
 /* =====================================================
-   EMPLOYEES TABLE
+   EMPLOYEES
 ===================================================== */
 
 function renderEmployees() {
+
+    if (!$("employeesTable"))
+        return;
+
 
     $("employeesTable").innerHTML = `
 
@@ -814,7 +783,7 @@ function renderEmployees() {
             <tr>
 
                 <th>
-                    ID
+                    Employee ID
                 </th>
 
                 <th>
@@ -954,21 +923,31 @@ function renderEmployees() {
 
 
 /* =====================================================
-   TRANSACTIONS TABLE
+   TRANSACTIONS
 ===================================================== */
 
 function renderTransactions() {
 
+    if (!$("transactionsTable"))
+        return;
+
+
     const month =
-        $("transactionMonth").value;
+        $("transactionMonth")
+            ? $("transactionMonth").value
+            : "";
 
 
     const employeeId =
-        $("transactionEmployee").value;
+        $("transactionEmployee")
+            ? $("transactionEmployee").value
+            : "";
 
 
     const type =
-        $("transactionType").value;
+        $("transactionType")
+            ? $("transactionType").value
+            : "";
 
 
     let rows =
@@ -1081,6 +1060,12 @@ function renderTransactions() {
                                 </td>
 
                                 <td>
+                                    <b>
+                                        ${escapeHTML(
+                                            transaction.employeeId
+                                        )}
+                                    </b>
+                                    -
                                     ${escapeHTML(
                                         employeeName(
                                             transaction.employeeId
@@ -1152,10 +1137,14 @@ function renderTransactions() {
 
 
 /* =====================================================
-   LEAVE TABLE
+   LEAVE
 ===================================================== */
 
 function renderLeave() {
+
+    if (!$("leaveTable"))
+        return;
+
 
     const rows =
         [...state.leaves]
@@ -1218,6 +1207,12 @@ function renderLeave() {
                             <tr>
 
                                 <td>
+                                    <b>
+                                        ${escapeHTML(
+                                            leave.employeeId
+                                        )}
+                                    </b>
+                                    -
                                     ${escapeHTML(
                                         employeeName(
                                             leave.employeeId
@@ -1297,7 +1292,8 @@ function renderReport() {
         $("reportMonth");
 
 
-    if (!reportMonth) return;
+    if (!reportMonth)
+        return;
 
 
     const month =
@@ -1369,68 +1365,76 @@ function renderReport() {
         );
 
 
-    $("reportSummary").innerHTML = `
+    if ($("reportSummary")) {
 
-        <div class="summary-box">
+        $("reportSummary").innerHTML = `
 
-            <span>
-                Total Payroll
-            </span>
+            <div class="summary-box">
 
-            <strong>
-                ${money(
-                    totalPayroll
-                )}
-            </strong>
+                <span>
+                    Total Payroll
+                </span>
 
-        </div>
+                <strong>
+                    ${money(
+                        totalPayroll
+                    )}
+                </strong>
 
-
-        <div class="summary-box">
-
-            <span>
-                Paid / Deductions
-            </span>
-
-            <strong>
-                ${money(
-                    totalPaid
-                )}
-            </strong>
-
-        </div>
+            </div>
 
 
-        <div class="summary-box">
+            <div class="summary-box">
 
-            <span>
-                Pending Salaries
-            </span>
+                <span>
+                    Paid / Deductions
+                </span>
 
-            <strong>
-                ${money(
-                    totalPending
-                )}
-            </strong>
+                <strong>
+                    ${money(
+                        totalPaid
+                    )}
+                </strong>
 
-        </div>
+            </div>
 
 
-        <div class="summary-box">
+            <div class="summary-box">
 
-            <span>
-                Outstanding Loans
-            </span>
+                <span>
+                    Pending Salaries
+                </span>
 
-            <strong>
-                ${money(
-                    totalLoans
-                )}
-            </strong>
+                <strong>
+                    ${money(
+                        totalPending
+                    )}
+                </strong>
 
-        </div>
+            </div>
 
-    `;
+
+            <div class="summary-box">
+
+                <span>
+                    Outstanding Loans
+                </span>
+
+                <strong>
+                    ${money(
+                        totalLoans
+                    )}
+                </strong>
+
+            </div>
+
+        `;
+
+    }
+
+
+    if (!$("reportTable"))
+        return;
 
 
     $("reportTable").innerHTML = `
@@ -1438,6 +1442,10 @@ function renderReport() {
         <thead>
 
             <tr>
+
+                <th>
+                    Employee ID
+                </th>
 
                 <th>
                     Employee
@@ -1495,6 +1503,14 @@ function renderReport() {
                         row => `
 
                             <tr>
+
+                                <td>
+                                    <b>
+                                        ${escapeHTML(
+                                            row.employee.id
+                                        )}
+                                    </b>
+                                </td>
 
                                 <td>
                                     ${escapeHTML(
@@ -1579,7 +1595,7 @@ function renderReport() {
                     <tr>
 
                         <td
-                            colspan="10"
+                            colspan="11"
                             class="empty"
                         >
                             No employees added yet.
@@ -1606,6 +1622,10 @@ function openModal(
     submitFunction
 ) {
 
+    if (!$("modal"))
+        return;
+
+
     $("modalTitle").textContent =
         title;
 
@@ -1624,6 +1644,7 @@ function openModal(
 
             event.preventDefault();
 
+
             submitFunction(
                 new FormData(
                     event.target
@@ -1637,30 +1658,42 @@ function openModal(
 
 function closeModal() {
 
-    $("modal").classList.add(
-        "hidden"
-    );
+    if ($("modal")) {
+
+        $("modal").classList.add(
+            "hidden"
+        );
+
+    }
 
 }
 
 
-$("closeModal").onclick =
-    closeModal;
+if ($("closeModal")) {
+
+    $("closeModal").onclick =
+        closeModal;
+
+}
 
 
-$("modal").onclick =
-    event => {
+if ($("modal")) {
 
-        if (
-            event.target ===
-            $("modal")
-        ) {
+    $("modal").onclick =
+        event => {
 
-            closeModal();
+            if (
+                event.target ===
+                $("modal")
+            ) {
 
-        }
+                closeModal();
 
-    };
+            }
+
+        };
+
+}
 
 
 /* =====================================================
@@ -1805,31 +1838,25 @@ function addEmployee() {
             }
 
 
-            const salary =
-                Number(
-                    formData.get(
-                        "salary"
-                    )
-                );
-
-
-            const food =
-                Number(
-                    formData.get(
-                        "food"
-                    )
-                );
-
-
             state.employees.push({
 
-                id,
+                id: id,
 
-                name,
+                name: name,
 
-                salary,
+                salary:
+                    Number(
+                        formData.get(
+                            "salary"
+                        )
+                    ),
 
-                food
+                food:
+                    Number(
+                        formData.get(
+                            "food"
+                        )
+                    )
 
             });
 
@@ -1857,7 +1884,8 @@ function editEmployee(id) {
         getEmployee(id);
 
 
-    if (!employee) return;
+    if (!employee)
+        return;
 
 
     openModal(
@@ -2012,7 +2040,8 @@ function deleteEmployee(id) {
         getEmployee(id);
 
 
-    if (!employee) return;
+    if (!employee)
+        return;
 
 
     if (
@@ -2221,9 +2250,7 @@ function addTransaction() {
             state.transactions.push({
 
                 id:
-                    generateID(
-                        "TX"
-                    ),
+                    generateID("TX"),
 
                 employeeId:
                     formData.get(
@@ -2464,9 +2491,7 @@ function addLeave() {
             state.leaves.push({
 
                 id:
-                    generateID(
-                        "LV"
-                    ),
+                    generateID("LV"),
 
                 employeeId:
                     formData.get(
@@ -2644,44 +2669,53 @@ document
    BUTTON EVENTS
 ===================================================== */
 
-$("addEmployeeBtn").onclick =
-    addEmployee;
+if ($("addEmployeeBtn"))
+    $("addEmployeeBtn").onclick =
+        addEmployee;
 
 
-$("addTransactionBtn").onclick =
-    addTransaction;
+if ($("addTransactionBtn"))
+    $("addTransactionBtn").onclick =
+        addTransaction;
 
 
-$("addLeaveBtn").onclick =
-    addLeave;
+if ($("addLeaveBtn"))
+    $("addLeaveBtn").onclick =
+        addLeave;
 
 
-$("dashboardMonth").onchange =
-    renderAll;
+if ($("dashboardMonth"))
+    $("dashboardMonth").onchange =
+        renderAll;
 
 
-$("transactionMonth").onchange =
-    renderTransactions;
+if ($("transactionMonth"))
+    $("transactionMonth").onchange =
+        renderTransactions;
 
 
-$("transactionEmployee").onchange =
-    renderTransactions;
+if ($("transactionEmployee"))
+    $("transactionEmployee").onchange =
+        renderTransactions;
 
 
-$("transactionType").onchange =
-    renderTransactions;
+if ($("transactionType"))
+    $("transactionType").onchange =
+        renderTransactions;
 
 
-$("reportMonth").onchange =
-    renderReport;
+if ($("reportMonth"))
+    $("reportMonth").onchange =
+        renderReport;
 
 
-$("printReportBtn").onclick =
-    () => {
+if ($("printReportBtn"))
+    $("printReportBtn").onclick =
+        () => {
 
-        window.print();
+            window.print();
 
-    };
+        };
 
 
 /* =====================================================
@@ -2694,7 +2728,8 @@ function updateClock() {
         $("clock");
 
 
-    if (!clock) return;
+    if (!clock)
+        return;
 
 
     clock.textContent =
@@ -2722,16 +2757,19 @@ updateClock();
    MONTH INITIALIZATION
 ===================================================== */
 
-$("dashboardMonth").value =
-    currentMonth();
+if ($("dashboardMonth"))
+    $("dashboardMonth").value =
+        currentMonth();
 
 
-$("transactionMonth").value =
-    currentMonth();
+if ($("transactionMonth"))
+    $("transactionMonth").value =
+        currentMonth();
 
 
-$("reportMonth").value =
-    currentMonth();
+if ($("reportMonth"))
+    $("reportMonth").value =
+        currentMonth();
 
 
 /* =====================================================
@@ -2744,7 +2782,8 @@ function updateDarkModeButton() {
         $("darkModeBtn");
 
 
-    if (!button) return;
+    if (!button)
+        return;
 
 
     const dark =
@@ -2812,10 +2851,6 @@ function toggleDarkMode() {
 }
 
 
-/* =====================================================
-   DARK MODE BUTTON
-===================================================== */
-
 const darkModeButton =
     $("darkModeBtn");
 
@@ -2831,7 +2866,7 @@ if (darkModeButton) {
 
 
 /* =====================================================
-   LOAD SAVED DARK MODE
+   LOAD DARK MODE
 ===================================================== */
 
 function loadDarkMode() {
