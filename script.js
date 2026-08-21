@@ -2,22 +2,28 @@
    AL JEFOON TENTS
    PAYROLL SYSTEM
    SCRIPT.JS
-   VERSION 2.0
+   VERSION 2.1
 
-   FEATURES:
-   - Automatic Employee IDs starting EMP003
-   - Salary + Food Allowance
-   - Salary payments
-   - Partial salary payments
-   - Automatic pending salary calculation
-   - Fully Paid / Partially Paid / Pending status
-   - Advances
-   - Loans
-   - Loan repayments
-   - Staff leave
-   - Monthly reports
-   - Dark mode
-   - LocalStorage
+   IMPORTANT PAYROLL RULE:
+
+   BASIC SALARY IS USED FOR:
+   - Salary Paid
+   - Pending Salary
+   - Fully Paid
+   - Partially Paid
+   - Pending
+
+   FOOD ALLOWANCE IS DISPLAYED SEPARATELY
+   AND IS NOT INCLUDED IN SALARY PAYMENT CALCULATIONS.
+
+   Example:
+
+   Basic Salary:     AED 2,000
+   Food Allowance:   AED   400
+   Salary Paid:      AED   200
+   Pending Salary:   AED 1,800
+
+   Food allowance does NOT make the pending amount AED 2,200.
 ===================================================== */
 
 
@@ -30,13 +36,6 @@ const DARK_MODE_KEY = "alJefoonPayrollDarkMode";
 
 
 /* =====================================================
-   DEFAULT DATA
-===================================================== */
-
-const DEFAULT_EMPLOYEES = [];
-
-
-/* =====================================================
    APPLICATION STATE
 ===================================================== */
 
@@ -44,7 +43,7 @@ let state =
     JSON.parse(
         localStorage.getItem(STORAGE_KEY) || "null"
     ) || {
-        employees: DEFAULT_EMPLOYEES,
+        employees: [],
         transactions: [],
         leaves: []
     };
@@ -167,7 +166,7 @@ function generateID(prefix) {
 
 
 /* =====================================================
-   AUTO EMPLOYEE ID
+   AUTOMATIC EMPLOYEE ID
    STARTS AT EMP003
 ===================================================== */
 
@@ -217,20 +216,25 @@ function getNextEmployeeID() {
 
 
 /* =====================================================
-   MONTHLY SALARY CALCULATION
+   GET SALARY PAYMENTS FOR MONTH
 =====================================================
 
-   IMPORTANT:
+   ONLY transactions with:
 
-   ONLY transactions with type "salary"
-   count as salary payments.
+       type === "salary"
 
-   Advances and loans are NOT counted
-   as salary paid.
+   are counted.
 
+   Food allowance is NOT counted.
+
+   Advances are NOT counted.
+
+   Loans are NOT counted.
+
+   Loan repayments are NOT counted.
 ===================================================== */
 
-function getMonthlySalaryPayment(
+function getMonthlySalaryPaid(
     employee,
     month
 ) {
@@ -275,11 +279,20 @@ function payrollFor(
     month
 ) {
 
-    const monthlySalary =
+    /* -----------------------------------------------
+       BASIC SALARY
+    ----------------------------------------------- */
+
+    const basicSalary =
         Number(
             employee.salary || 0
         );
 
+
+    /* -----------------------------------------------
+       FOOD ALLOWANCE
+       DISPLAY ONLY
+    ----------------------------------------------- */
 
     const foodAllowance =
         Number(
@@ -287,46 +300,61 @@ function payrollFor(
         );
 
 
-    const monthlyTotal =
-        monthlySalary +
-        foodAllowance;
+    /* -----------------------------------------------
+       SALARY PAID
 
-
-    /* -------------------------------------------------
-       SALARY PAYMENTS
-    ------------------------------------------------- */
+       IMPORTANT:
+       This only uses salary transactions.
+    ----------------------------------------------- */
 
     const salaryPaid =
-        getMonthlySalaryPayment(
+        getMonthlySalaryPaid(
             employee,
             month
         );
 
 
-    /* -------------------------------------------------
+    /* -----------------------------------------------
        PENDING SALARY
-    ------------------------------------------------- */
 
-    const pending =
+       FOOD ALLOWANCE IS NOT INCLUDED.
+
+       Example:
+
+       Salary = 2000
+       Food   = 400
+       Paid   = 200
+
+       Pending = 2000 - 200
+               = 1800
+    ----------------------------------------------- */
+
+    const pendingSalary =
         Math.max(
             0,
-            monthlyTotal -
+            basicSalary -
             salaryPaid
         );
 
 
-    /* -------------------------------------------------
+    /* -----------------------------------------------
        PAYMENT STATUS
-    ------------------------------------------------- */
+    ----------------------------------------------- */
 
     let status =
         "PENDING";
 
 
     if (
+        basicSalary <= 0
+    ) {
+
+        status =
+            "PENDING";
+
+    } else if (
         salaryPaid >=
-        monthlyTotal &&
-        monthlyTotal > 0
+        basicSalary
     ) {
 
         status =
@@ -342,9 +370,9 @@ function payrollFor(
     }
 
 
-    /* -------------------------------------------------
+    /* -----------------------------------------------
        ADVANCES
-    ------------------------------------------------- */
+    ----------------------------------------------- */
 
     const advances =
         state.transactions
@@ -375,9 +403,9 @@ function payrollFor(
             );
 
 
-    /* -------------------------------------------------
+    /* -----------------------------------------------
        LOAN REPAYMENTS
-    ------------------------------------------------- */
+    ----------------------------------------------- */
 
     const loanRepayments =
         state.transactions
@@ -408,9 +436,9 @@ function payrollFor(
             );
 
 
-    /* -------------------------------------------------
+    /* -----------------------------------------------
        OTHER ADJUSTMENTS
-    ------------------------------------------------- */
+    ----------------------------------------------- */
 
     const adjustments =
         state.transactions
@@ -441,9 +469,9 @@ function payrollFor(
             );
 
 
-    /* -------------------------------------------------
+    /* -----------------------------------------------
        LEAVE DAYS
-    ------------------------------------------------- */
+    ----------------------------------------------- */
 
     const leaveDays =
         state.leaves
@@ -473,18 +501,33 @@ function payrollFor(
 
     return {
 
+        /* BASIC SALARY */
         salary:
-            monthlySalary,
+            basicSalary,
 
+        /* FOOD DISPLAY ONLY */
         food:
             foodAllowance,
 
-        total:
-            monthlyTotal,
+        /* IMPORTANT:
+           This is the amount against which
+           salary payments are calculated.
+        */
+        salaryDue:
+            basicSalary,
 
-        salaryPaid,
+        /* Salary payments only */
+        salaryPaid:
 
-        pending,
+            Math.min(
+                salaryPaid,
+                basicSalary
+            ),
+
+        /* Remaining basic salary */
+        pending:
+
+            pendingSalary,
 
         status,
 
@@ -750,18 +793,44 @@ function renderDashboard() {
         );
 
 
-    const totalPayroll =
+    /* -----------------------------------------------
+       TOTAL BASIC SALARIES
+    ----------------------------------------------- */
+
+    const totalSalaries =
         payroll.reduce(
             (
                 total,
                 row
             ) =>
                 total +
-                row.total,
+                row.salaryDue,
 
             0
         );
 
+
+    /* -----------------------------------------------
+       TOTAL FOOD ALLOWANCE
+       SEPARATE FROM SALARIES
+    ----------------------------------------------- */
+
+    const totalFood =
+        payroll.reduce(
+            (
+                total,
+                row
+            ) =>
+                total +
+                row.food,
+
+            0
+        );
+
+
+    /* -----------------------------------------------
+       TOTAL SALARY PAID
+    ----------------------------------------------- */
 
     const totalPaid =
         payroll.reduce(
@@ -776,6 +845,10 @@ function renderDashboard() {
         );
 
 
+    /* -----------------------------------------------
+       TOTAL PENDING SALARY
+    ----------------------------------------------- */
+
     const totalPending =
         payroll.reduce(
             (
@@ -788,6 +861,10 @@ function renderDashboard() {
             0
         );
 
+
+    /* -----------------------------------------------
+       LOANS
+    ----------------------------------------------- */
 
     const totalLoans =
         state.employees.reduce(
@@ -807,12 +884,20 @@ function renderDashboard() {
         );
 
 
+    /* -----------------------------------------------
+       LEAVE
+    ----------------------------------------------- */
+
     const employeesOnLeave =
         payroll.filter(
             row =>
                 row.leaveDays > 0
         ).length;
 
+
+    /* -----------------------------------------------
+       STATUS COUNTS
+    ----------------------------------------------- */
 
     const fullyPaid =
         payroll.filter(
@@ -838,6 +923,10 @@ function renderDashboard() {
         ).length;
 
 
+    /* -----------------------------------------------
+       DASHBOARD CARDS
+    ----------------------------------------------- */
+
     if ($("statEmployees"))
         $("statEmployees").textContent =
             state.employees.length;
@@ -845,7 +934,7 @@ function renderDashboard() {
 
     if ($("statSalaries"))
         $("statSalaries").textContent =
-            money(totalPayroll);
+            money(totalSalaries);
 
 
     if ($("statPaid"))
@@ -883,6 +972,15 @@ function renderDashboard() {
             pendingEmployees;
 
 
+    if ($("statFood"))
+        $("statFood").textContent =
+            money(totalFood);
+
+
+    /* -----------------------------------------------
+       DASHBOARD TABLE
+    ----------------------------------------------- */
+
     if (!$("dashboardTable"))
         return;
 
@@ -902,7 +1000,7 @@ function renderDashboard() {
                 </th>
 
                 <th class="num">
-                    Salary
+                    Basic Salary
                 </th>
 
                 <th class="num">
@@ -910,15 +1008,11 @@ function renderDashboard() {
                 </th>
 
                 <th class="num">
-                    Monthly Total
+                    Salary Paid
                 </th>
 
                 <th class="num">
-                    Paid
-                </th>
-
-                <th class="num">
-                    Pending
+                    Pending Salary
                 </th>
 
                 <th>
@@ -985,15 +1079,9 @@ function renderDashboard() {
                                     <td class="num">
                                         <b>
                                             ${money(
-                                                row.total
+                                                row.salaryPaid
                                             )}
                                         </b>
-                                    </td>
-
-                                    <td class="num">
-                                        ${money(
-                                            row.salaryPaid
-                                        )}
                                     </td>
 
                                     <td class="num">
@@ -1036,7 +1124,7 @@ function renderDashboard() {
                     <tr>
 
                         <td
-                            colspan="9"
+                            colspan="8"
                             class="empty"
                         >
                             No employees added yet.
@@ -1078,7 +1166,7 @@ function renderEmployees() {
                 </th>
 
                 <th class="num">
-                    Salary
+                    Basic Salary
                 </th>
 
                 <th class="num">
@@ -1086,7 +1174,7 @@ function renderEmployees() {
                 </th>
 
                 <th class="num">
-                    Monthly Total
+                    Salary + Food
                 </th>
 
                 <th class="num">
@@ -1637,18 +1725,44 @@ function renderReport() {
         );
 
 
-    const totalPayroll =
+    /* -----------------------------------------------
+       BASIC SALARY TOTAL
+    ----------------------------------------------- */
+
+    const totalSalaries =
         rows.reduce(
             (
                 total,
                 row
             ) =>
                 total +
-                row.payroll.total,
+                row.payroll.salaryDue,
 
             0
         );
 
+
+    /* -----------------------------------------------
+       FOOD ALLOWANCE TOTAL
+       SEPARATE
+    ----------------------------------------------- */
+
+    const totalFood =
+        rows.reduce(
+            (
+                total,
+                row
+            ) =>
+                total +
+                row.payroll.food,
+
+            0
+        );
+
+
+    /* -----------------------------------------------
+       SALARY PAID
+    ----------------------------------------------- */
 
     const totalPaid =
         rows.reduce(
@@ -1663,6 +1777,10 @@ function renderReport() {
         );
 
 
+    /* -----------------------------------------------
+       PENDING BASIC SALARY
+    ----------------------------------------------- */
+
     const totalPending =
         rows.reduce(
             (
@@ -1675,6 +1793,10 @@ function renderReport() {
             0
         );
 
+
+    /* -----------------------------------------------
+       STATUS COUNTS
+    ----------------------------------------------- */
 
     const fullyPaid =
         rows.filter(
@@ -1700,6 +1822,10 @@ function renderReport() {
         ).length;
 
 
+    /* -----------------------------------------------
+       ADVANCES
+    ----------------------------------------------- */
+
     const totalAdvances =
         rows.reduce(
             (
@@ -1712,6 +1838,10 @@ function renderReport() {
             0
         );
 
+
+    /* -----------------------------------------------
+       LOANS
+    ----------------------------------------------- */
 
     const totalLoans =
         state.employees.reduce(
@@ -1731,9 +1861,9 @@ function renderReport() {
         );
 
 
-    /* -------------------------------------------------
+    /* -----------------------------------------------
        REPORT SUMMARY
-    ------------------------------------------------- */
+    ----------------------------------------------- */
 
     if ($("reportSummary")) {
 
@@ -1742,12 +1872,27 @@ function renderReport() {
             <div class="summary-box">
 
                 <span>
-                    Monthly Payroll
+                    Total Basic Salaries
                 </span>
 
                 <strong>
                     ${money(
-                        totalPayroll
+                        totalSalaries
+                    )}
+                </strong>
+
+            </div>
+
+
+            <div class="summary-box">
+
+                <span>
+                    Food Allowance
+                </span>
+
+                <strong>
+                    ${money(
+                        totalFood
                     )}
                 </strong>
 
@@ -1857,9 +2002,9 @@ function renderReport() {
     }
 
 
-    /* -------------------------------------------------
+    /* -----------------------------------------------
        REPORT TABLE
-    ------------------------------------------------- */
+    ----------------------------------------------- */
 
     if (!$("reportTable"))
         return;
@@ -1880,7 +2025,7 @@ function renderReport() {
                 </th>
 
                 <th class="num">
-                    Salary
+                    Basic Salary
                 </th>
 
                 <th class="num">
@@ -1888,15 +2033,11 @@ function renderReport() {
                 </th>
 
                 <th class="num">
-                    Monthly Total
-                </th>
-
-                <th class="num">
                     Salary Paid
                 </th>
 
                 <th class="num">
-                    Pending
+                    Pending Salary
                 </th>
 
                 <th>
@@ -1952,26 +2093,19 @@ function renderReport() {
 
 
                                 <td class="num">
+
                                     ${money(
-                                        row.payroll.salary
+                                        row.payroll.salaryDue
                                     )}
+
                                 </td>
 
 
                                 <td class="num">
+
                                     ${money(
                                         row.payroll.food
                                     )}
-                                </td>
-
-
-                                <td class="num">
-
-                                    <b>
-                                        ${money(
-                                            row.payroll.total
-                                        )}
-                                    </b>
 
                                 </td>
 
@@ -2049,7 +2183,7 @@ function renderReport() {
                     <tr>
 
                         <td
-                            colspan="11"
+                            colspan="10"
                             class="empty"
                         >
                             No employees added yet.
@@ -2208,7 +2342,7 @@ function addEmployee() {
             <div class="form-field">
 
                 <label>
-                    Monthly Salary (AED)
+                    Basic Salary (AED)
                 </label>
 
                 <input
@@ -2387,7 +2521,7 @@ function editEmployee(id) {
             <div class="form-field">
 
                 <label>
-                    Monthly Salary (AED)
+                    Basic Salary (AED)
                 </label>
 
                 <input
@@ -2727,12 +2861,17 @@ function addTransaction() {
                 );
 
 
-            /* -----------------------------------------
-               IMPORTANT:
-               SALARY PAYMENT IS SEPARATE.
-               ADVANCE AND LOAN DO NOT REDUCE
-               MONTHLY SALARY PENDING.
-            ----------------------------------------- */
+            if (
+                amount <= 0
+            ) {
+
+                alert(
+                    "Please enter an amount greater than zero."
+                );
+
+                return;
+
+            }
 
 
             state.transactions.push({
