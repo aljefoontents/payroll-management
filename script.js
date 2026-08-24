@@ -1968,12 +1968,12 @@ function renderDashboard() {
         ).length;
 
 
-    const partiallyPaid =
-        payroll.filter(
-            row =>
-                row.status ===
-                "PARTIALLY PAID"
-        ).length;
+   const pendingEmployees = employees.filter(employee => {
+    const payroll = payrollFor(employee, selectedMonth);
+    const previousPending = getPreviousPendingSalary(employee, selectedMonth);
+
+    return payroll.pendingSalary > 0 || previousPending > 0;
+});
 
 
     const pendingEmployees = employees.filter(employee => {
