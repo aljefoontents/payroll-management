@@ -12,15 +12,15 @@
    - Leave editing
    - Leave dates optional
    - Leave days optional
-   - Leave counter counts employees with leave records
    - Unpaid leave deducted from salary
    - Salary calculation can start from a selected date
    - Employees returning from vacation can be paid
      from their return/salary-start date
-   - Previous month pending salaries shown in reports
-   - Previous month pending salaries shown on dashboard
+   - Previous salary pending calculated correctly
+   - Zero previous pending balances are hidden
+   - Previous pending is separate from current pending
    - Dark mode
-   - NO PRINT DATE CHANGE
+   - Original print behaviour retained
 ===================================================== */
 
 
@@ -28,8 +28,11 @@
    STORAGE
 ===================================================== */
 
-const STORAGE_KEY = "alJefoonPayrollV1";
-const DARK_MODE_KEY = "alJefoonPayrollDarkMode";
+const STORAGE_KEY =
+    "alJefoonPayrollV1";
+
+const DARK_MODE_KEY =
+    "alJefoonPayrollDarkMode";
 
 
 /* =====================================================
@@ -90,7 +93,10 @@ const $ = id =>
 
 function money(value) {
 
-    return `AED ${Number(value || 0).toLocaleString(
+    const amount =
+        Number(value || 0);
+
+    return `AED ${amount.toLocaleString(
         "en-AE",
         {
             minimumFractionDigits: 2,
@@ -103,15 +109,14 @@ function money(value) {
 
 function monthKey(date) {
 
-    if (!date) return "";
+    if (!date)
+        return "";
 
-    const d = new Date(
-        String(date).length === 10
-            ? `${date}T00:00:00`
-            : date
-    );
+    const d =
+        new Date(date);
 
-    if (isNaN(d.getTime())) return "";
+    if (isNaN(d.getTime()))
+        return "";
 
     return `${d.getFullYear()}-${String(
         d.getMonth() + 1
@@ -122,7 +127,8 @@ function monthKey(date) {
 
 function currentMonth() {
 
-    const d = new Date();
+    const d =
+        new Date();
 
     return `${d.getFullYear()}-${String(
         d.getMonth() + 1
@@ -134,19 +140,26 @@ function currentMonth() {
 function escapeHTML(value) {
 
     return String(value ?? "")
-        .replace(/[&<>"']/g, character => {
+        .replace(
+            /[&<>"']/g,
+            character => {
 
-            const entities = {
-                "&": "&amp;",
-                "<": "&lt;",
-                ">": "&gt;",
-                '"': "&quot;",
-                "'": "&#039;"
-            };
+                const entities = {
 
-            return entities[character];
+                    "&": "&amp;",
+                    "<": "&lt;",
+                    ">": "&gt;",
+                    '"': "&quot;",
+                    "'": "&#039;"
 
-        });
+                };
+
+                return entities[
+                    character
+                ];
+
+            }
+        );
 
 }
 
@@ -195,32 +208,38 @@ function getNextEmployeeID() {
 
     let highestNumber = 2;
 
-    state.employees.forEach(employee => {
+    state.employees.forEach(
+        employee => {
 
-        const match =
-            String(employee.id || "")
-                .match(/^EMP(\d+)$/i);
-
-        if (match) {
-
-            const number =
-                parseInt(
-                    match[1],
-                    10
+            const match =
+                String(
+                    employee.id || ""
+                ).match(
+                    /^EMP(\d+)$/i
                 );
 
-            if (
-                number > highestNumber
-            ) {
+            if (match) {
 
-                highestNumber =
-                    number;
+                const number =
+                    parseInt(
+                        match[1],
+                        10
+                    );
+
+                if (
+                    number >
+                    highestNumber
+                ) {
+
+                    highestNumber =
+                        number;
+
+                }
 
             }
 
         }
-
-    });
+    );
 
     return (
         "EMP" +
@@ -233,128 +252,101 @@ function getNextEmployeeID() {
 
 
 /* =====================================================
-   GET MONTHLY SALARY PAID
+   DATE HELPERS
 ===================================================== */
 
-function getMonthlySalaryPaid(
-    employee,
-    month
+function makeLocalDate(
+    year,
+    monthNumber,
+    day
 ) {
 
-    return state.transactions
-        .filter(
-            transaction =>
-
-                transaction.employeeId ===
-                employee.id &&
-
-                transaction.type ===
-                "salary" &&
-
-                monthKey(
-                    transaction.date
-                ) === month
-        )
-        .reduce(
-            (
-                total,
-                transaction
-            ) =>
-                total +
-                Number(
-                    transaction.amount || 0
-                ),
-
-            0
-        );
+    return new Date(
+        year,
+        monthNumber - 1,
+        day
+    );
 
 }
 
 
-/* =====================================================
-   GET SALARY CALCULATION START DATE
-
-   IMPORTANT:
-
-   The EARLIEST salaryStartDate in the selected
-   month is used.
-
-   This prevents a second salary payment entered
-   later in the same month from accidentally moving
-   the salary calculation start date forward.
-===================================================== */
-
-function getSalaryCalculationStartDate(
-    employee,
-    month
+function parseDateOnly(
+    value
 ) {
 
-    if (!employee) {
+    if (!value)
+        return null;
 
-        return `${month}-01`;
-
-    }
-
-    const salaryTransactions =
-        state.transactions
-            .filter(
-                transaction =>
-
-                    transaction.employeeId ===
-                    employee.id &&
-
-                    transaction.type ===
-                    "salary" &&
-
-                    monthKey(
-                        transaction.date
-                    ) === month &&
-
-                    transaction.salaryStartDate
-            )
-            .sort(
-                (
-                    a,
-                    b
-                ) =>
-                    new Date(
-                        a.salaryStartDate +
-                        "T00:00:00"
-                    ) -
-                    new Date(
-                        b.salaryStartDate +
-                        "T00:00:00"
-                    )
-            );
-
+    const parts =
+        String(value)
+            .split("-")
+            .map(Number);
 
     if (
-        salaryTransactions.length
+        parts.length !== 3 ||
+        parts.some(
+            number =>
+                !Number.isFinite(number)
+        )
     ) {
 
-        const date =
-            salaryTransactions[0]
-                .salaryStartDate;
-
-        if (
-            monthKey(date) === month
-        ) {
-
-            return date;
-
-        }
+        return null;
 
     }
 
+    const date =
+        new Date(
+            parts[0],
+            parts[1] - 1,
+            parts[2]
+        );
 
-    return `${month}-01`;
+    if (
+        isNaN(
+            date.getTime()
+        )
+    ) {
+
+        return null;
+
+    }
+
+    return date;
+
+}
+
+
+function formatDateInput(
+    date
+) {
+
+    if (!date)
+        return "";
+
+    return `${date.getFullYear()}-${String(
+        date.getMonth() + 1
+    ).padStart(2, "0")}-${String(
+        date.getDate()
+    ).padStart(2, "0")}`;
 
 }
 
 
 /* =====================================================
-   GET SALARY START DAY
+   FIND SALARY START DATE
 ===================================================== */
+
+/*
+   The Salary Calculation From date is stored
+   on salary transactions.
+
+   For a selected month, we use the earliest valid
+   salary-start date entered for that employee
+   during that month.
+
+   If there is no salary-start date, salary starts
+   from the first day of the month.
+*/
 
 function getSalaryStartDay(
     employee,
@@ -362,38 +354,115 @@ function getSalaryStartDay(
     daysInMonth
 ) {
 
-    const startDate =
-        getSalaryCalculationStartDate(
-            employee,
-            month
+    let startDay = 1;
+
+    const salaryTransactions =
+        state.transactions.filter(
+            transaction => {
+
+                if (
+                    transaction.employeeId !==
+                    employee.id
+                ) {
+
+                    return false;
+
+                }
+
+                if (
+                    transaction.type !==
+                    "salary"
+                ) {
+
+                    return false;
+
+                }
+
+                if (
+                    monthKey(
+                        transaction.date
+                    ) !== month
+                ) {
+
+                    return false;
+
+                }
+
+                return true;
+
+            }
         );
 
 
-    const [year, monthNumber] =
-        month.split("-").map(Number);
+    const startDays =
+        salaryTransactions
+            .map(
+                transaction => {
 
+                    if (
+                        !transaction.salaryStartDate
+                    ) {
 
-    const date =
-        new Date(
-            startDate +
-            "T00:00:00"
-        );
+                        return null;
+
+                    }
+
+                    const date =
+                        parseDateOnly(
+                            transaction.salaryStartDate
+                        );
+
+                    if (!date)
+                        return null;
+
+                    if (
+                        monthKey(
+                            transaction.salaryStartDate
+                        ) !== month
+                    ) {
+
+                        return null;
+
+                    }
+
+                    return date.getDate();
+
+                }
+            )
+            .filter(
+                day =>
+                    Number.isFinite(day) &&
+                    day >= 1 &&
+                    day <= daysInMonth
+            );
 
 
     if (
-        isNaN(date.getTime()) ||
-        date.getFullYear() !== year ||
-        date.getMonth() !== monthNumber - 1
+        startDays.length
     ) {
 
-        return 1;
+        /*
+           IMPORTANT:
+
+           Use the earliest salary start date
+           recorded for the month.
+
+           This prevents a later salary payment
+           from incorrectly reducing the salary
+           period again.
+        */
+
+        startDay =
+            Math.min(
+                ...startDays
+            );
 
     }
 
 
     return Math.min(
         Math.max(
-            date.getDate(),
+            startDay,
             1
         ),
         daysInMonth
@@ -403,7 +472,7 @@ function getSalaryStartDay(
 
 
 /* =====================================================
-   CHECK EMPLOYEE ON FULL MONTH LEAVE
+   EMPLOYEE LEAVE CHECK
 ===================================================== */
 
 function isEmployeeOnLeave(
@@ -411,16 +480,8 @@ function isEmployeeOnLeave(
     month
 ) {
 
-    if (!employee) {
-
-        return false;
-
-    }
-
-
     const [year, monthNumber] =
         month.split("-").map(Number);
-
 
     const daysInMonth =
         new Date(
@@ -429,19 +490,17 @@ function isEmployeeOnLeave(
             0
         ).getDate();
 
-
     const monthStart =
-        new Date(
+        makeLocalDate(
             year,
-            monthNumber - 1,
+            monthNumber,
             1
         );
 
-
     const monthEnd =
-        new Date(
+        makeLocalDate(
             year,
-            monthNumber - 1,
+            monthNumber,
             daysInMonth
         );
 
@@ -460,8 +519,10 @@ function isEmployeeOnLeave(
 
 
             /*
-               No dates:
-               retain original behaviour.
+               No dates but days entered.
+
+               This is treated as leave for the
+               selected month.
             */
 
             if (
@@ -469,13 +530,18 @@ function isEmployeeOnLeave(
                 !leave.endDate
             ) {
 
-                return true;
+                return Number(
+                    leave.days || 0
+                ) >= daysInMonth;
 
             }
 
 
             /*
                Start date but no end date.
+
+               Leave continues through the end
+               of the selected month.
             */
 
             if (
@@ -484,13 +550,15 @@ function isEmployeeOnLeave(
             ) {
 
                 const start =
-                    new Date(
-                        leave.startDate +
-                        "T00:00:00"
+                    parseDateOnly(
+                        leave.startDate
                     );
 
+                if (!start)
+                    return false;
+
                 return (
-                    start <= monthStart
+                    start <= monthEnd
                 );
 
             }
@@ -498,6 +566,9 @@ function isEmployeeOnLeave(
 
             /*
                End date but no start date.
+
+               Treat the leave as beginning
+               before / at the selected month.
             */
 
             if (
@@ -506,35 +577,46 @@ function isEmployeeOnLeave(
             ) {
 
                 const end =
-                    new Date(
-                        leave.endDate +
-                        "T00:00:00"
+                    parseDateOnly(
+                        leave.endDate
                     );
 
+                if (!end)
+                    return false;
+
                 return (
-                    end >= monthEnd
+                    end >= monthStart
                 );
 
             }
 
 
-            const leaveStart =
-                new Date(
-                    leave.startDate +
-                    "T00:00:00"
+            /*
+               Both dates exist.
+            */
+
+            const start =
+                parseDateOnly(
+                    leave.startDate
                 );
 
-
-            const leaveEnd =
-                new Date(
-                    leave.endDate +
-                    "T00:00:00"
+            const end =
+                parseDateOnly(
+                    leave.endDate
                 );
 
+            if (
+                !start ||
+                !end
+            ) {
+
+                return false;
+
+            }
 
             return (
-                leaveStart <= monthStart &&
-                leaveEnd >= monthEnd
+                start <= monthEnd &&
+                end >= monthStart
             );
 
         }
@@ -544,14 +626,14 @@ function isEmployeeOnLeave(
 
 
 /* =====================================================
-   CALCULATE UNPAID LEAVE DAYS
+   LEAVE DAYS FOR MONTH
 ===================================================== */
 
 function getLeaveDaysForMonth(
     employee,
     month,
     daysInMonth,
-    salaryStartDay = 1
+    salaryStartDay
 ) {
 
     const [year, monthNumber] =
@@ -559,30 +641,29 @@ function getLeaveDaysForMonth(
 
 
     const monthStart =
-        new Date(
+        makeLocalDate(
             year,
-            monthNumber - 1,
+            monthNumber,
             1
         );
 
 
     const monthEnd =
-        new Date(
+        makeLocalDate(
             year,
-            monthNumber - 1,
+            monthNumber,
             daysInMonth
         );
 
 
     /*
-       Salary calculation begins at the selected
-       salary start day.
+       Salary period starts from salaryStartDay.
     */
 
     const salaryStart =
-        new Date(
+        makeLocalDate(
             year,
-            monthNumber - 1,
+            monthNumber,
             salaryStartDay
         );
 
@@ -602,7 +683,8 @@ function getLeaveDaysForMonth(
                 /*
                    No dates.
 
-                   Use manually entered number of days.
+                   Use manually entered number of days
+                   if supplied.
                 */
 
                 if (
@@ -630,10 +712,12 @@ function getLeaveDaysForMonth(
                 ) {
 
                     const leaveStart =
-                        new Date(
-                            leave.startDate +
-                            "T00:00:00"
+                        parseDateOnly(
+                            leave.startDate
                         );
+
+                    if (!leaveStart)
+                        return;
 
 
                     const actualStart =
@@ -653,8 +737,18 @@ function getLeaveDaysForMonth(
                     }
 
 
+                    /*
+                       If days were manually entered,
+                       use those days.
+
+                       Otherwise calculate through the
+                       end of the selected month.
+                    */
+
                     if (
-                        Number(leave.days || 0) > 0
+                        Number(
+                            leave.days || 0
+                        ) > 0
                     ) {
 
                         leaveDays +=
@@ -672,7 +766,12 @@ function getLeaveDaysForMonth(
                         const actualDays =
                             Math.floor(
                                 difference /
-                                (1000 * 60 * 60 * 24)
+                                (
+                                    1000 *
+                                    60 *
+                                    60 *
+                                    24
+                                )
                             ) + 1;
 
 
@@ -696,14 +795,23 @@ function getLeaveDaysForMonth(
                 ) {
 
                     const leaveEnd =
-                        new Date(
-                            leave.endDate +
-                            "T00:00:00"
+                        parseDateOnly(
+                            leave.endDate
                         );
+
+                    if (!leaveEnd)
+                        return;
+
+
+                    const actualEnd =
+                        leaveEnd <
+                        monthEnd
+                            ? leaveEnd
+                            : monthEnd;
 
 
                     if (
-                        leaveEnd <
+                        actualEnd <
                         salaryStart
                     ) {
 
@@ -713,39 +821,14 @@ function getLeaveDaysForMonth(
 
 
                     if (
-                        Number(leave.days || 0) > 0
+                        Number(
+                            leave.days || 0
+                        ) > 0
                     ) {
 
                         leaveDays +=
                             Number(
                                 leave.days
-                            );
-
-                    } else {
-
-                        const actualEnd =
-                            leaveEnd <
-                            monthEnd
-                                ? leaveEnd
-                                : monthEnd;
-
-
-                        const difference =
-                            actualEnd.getTime() -
-                            salaryStart.getTime();
-
-
-                        const actualDays =
-                            Math.floor(
-                                difference /
-                                (1000 * 60 * 60 * 24)
-                            ) + 1;
-
-
-                        leaveDays +=
-                            Math.max(
-                                0,
-                                actualDays
                             );
 
                     }
@@ -760,18 +843,33 @@ function getLeaveDaysForMonth(
                 */
 
                 const leaveStart =
-                    new Date(
-                        leave.startDate +
-                        "T00:00:00"
+                    parseDateOnly(
+                        leave.startDate
                     );
-
 
                 const leaveEnd =
-                    new Date(
-                        leave.endDate +
-                        "T00:00:00"
+                    parseDateOnly(
+                        leave.endDate
                     );
 
+
+                if (
+                    !leaveStart ||
+                    !leaveEnd
+                ) {
+
+                    return;
+
+                }
+
+
+                /*
+                   Find overlap between:
+
+                   - salary calculation period
+                   - selected month
+                   - unpaid leave
+                */
 
                 const actualStart =
                     [
@@ -806,33 +904,25 @@ function getLeaveDaysForMonth(
                 }
 
 
-                if (
-                    Number(leave.days || 0) > 0
-                ) {
-
-                    leaveDays +=
-                        Number(
-                            leave.days
-                        );
-
-                } else {
-
-                    const difference =
-                        actualEnd.getTime() -
-                        actualStart.getTime();
+                const difference =
+                    actualEnd.getTime() -
+                    actualStart.getTime();
 
 
-                    const actualDays =
-                        Math.floor(
-                            difference /
-                            (1000 * 60 * 60 * 24)
-                        ) + 1;
+                const actualDays =
+                    Math.floor(
+                        difference /
+                        (
+                            1000 *
+                            60 *
+                            60 *
+                            24
+                        )
+                    ) + 1;
 
 
-                    leaveDays +=
-                        actualDays;
-
-                }
+                leaveDays +=
+                    actualDays;
 
             }
         );
@@ -850,6 +940,45 @@ function getLeaveDaysForMonth(
             1
         )
     );
+
+}
+
+
+/* =====================================================
+   MONTHLY SALARY PAID
+===================================================== */
+
+function getMonthlySalaryPaid(
+    employee,
+    month
+) {
+
+    return state.transactions
+        .filter(
+            transaction =>
+
+                transaction.employeeId ===
+                employee.id &&
+
+                transaction.type ===
+                "salary" &&
+
+                monthKey(
+                    transaction.date
+                ) === month
+        )
+        .reduce(
+            (
+                total,
+                transaction
+            ) =>
+                total +
+                Number(
+                    transaction.amount || 0
+                ),
+
+            0
+        );
 
 }
 
@@ -892,12 +1021,11 @@ function payrollFor(
 
        Example:
 
-       August 20
-       = salary starts from August 20.
+       August 20 =
+       salary starts on August 20.
 
-       Payable calendar days:
-       20 through 31
-       = 12 days.
+       Payable calendar days =
+       August 20 through August 31.
     */
 
     const salaryStartDay =
@@ -918,86 +1046,17 @@ function payrollFor(
 
 
     /*
-       Full-month leave.
+       Salary is calculated from the selected
+       salary-start date.
+
+       We DO NOT automatically mark the employee
+       as ON LEAVE merely because a leave record
+       exists before the salary-start date.
+
+       This is important for employees returning
+       from vacation.
     */
 
-    const employeeOnFullLeave =
-        isEmployeeOnLeave(
-            employee,
-            month
-        );
-
-
-    if (
-        employeeOnFullLeave
-    ) {
-
-        return {
-
-            salary:
-                basicSalary,
-
-            food:
-                0,
-
-            salaryDue:
-                0,
-
-            salaryPaid:
-                0,
-
-            pending:
-                0,
-
-            status:
-                "ON LEAVE",
-
-            advances:
-                getMonthlyTransactionTotal(
-                    employee,
-                    month,
-                    "advance"
-                ),
-
-            loanRepayments:
-                getMonthlyTransactionTotal(
-                    employee,
-                    month,
-                    "loan_repayment"
-                ),
-
-            adjustments:
-                getMonthlyTransactionTotal(
-                    employee,
-                    month,
-                    "adjustment"
-                ),
-
-            leaveDays:
-                daysInMonth,
-
-            payableDays:
-                0,
-
-            salaryStartDate:
-                `${month}-${String(
-                    salaryStartDay
-                ).padStart(2, "0")}`,
-
-            salaryStartDay:
-                salaryStartDay,
-
-            salaryPeriodDays:
-                0
-
-        };
-
-    }
-
-
-    /*
-       Calculate unpaid leave.
-    */
 
     const leaveDays =
         getLeaveDaysForMonth(
@@ -1007,11 +1066,6 @@ function payrollFor(
             salaryStartDay
         );
 
-
-    /*
-       Number of days for which salary can actually
-       be paid.
-    */
 
     const payableDays =
         Math.max(
@@ -1023,7 +1077,7 @@ function payrollFor(
 
     /*
        Daily salary is based on the actual number
-       of days in the selected month.
+       of calendar days in the selected month.
     */
 
     const dailySalary =
@@ -1031,20 +1085,6 @@ function payrollFor(
             ? basicSalary / daysInMonth
             : 0;
 
-
-    /*
-       Salary due.
-
-       Example:
-
-       Basic salary = AED 2,500
-       August = 31 days
-       Salary From = August 20
-       Payable days = 12
-
-       2500 / 31 × 12
-       = AED 967.74
-    */
 
     const salaryDue =
         Math.max(
@@ -1055,7 +1095,7 @@ function payrollFor(
 
 
     /*
-       Salary already paid.
+       Salary actually paid during this month.
     */
 
     const salaryPaidRaw =
@@ -1064,6 +1104,16 @@ function payrollFor(
             month
         );
 
+
+    /*
+       IMPORTANT:
+
+       Do not let an overpayment make the calculation
+       appear partially paid.
+
+       If amount paid >= salary due,
+       status must be FULLY PAID.
+    */
 
     const salaryPaid =
         Math.min(
@@ -1074,10 +1124,6 @@ function payrollFor(
             salaryDue
         );
 
-
-    /*
-       Remaining salary.
-    */
 
     const pendingSalary =
         Math.max(
@@ -1148,11 +1194,9 @@ function payrollFor(
         food:
             foodAllowance,
 
-        salaryDue:
-            salaryDue,
+        salaryDue,
 
-        salaryPaid:
-            salaryPaid,
+        salaryPaid,
 
         pending:
             pendingSalary,
@@ -1225,21 +1269,40 @@ function getMonthlyTransactionTotal(
 
 /* =====================================================
    PREVIOUS MONTH PENDING SALARY
+   CORRECTED VERSION
 ===================================================== */
+
+/*
+   This function calculates only REAL unpaid salary
+   from months BEFORE the currently selected month.
+
+   It deliberately does NOT return rows containing
+   AED 0.00.
+
+   It also looks at:
+
+   - salary transactions
+   - salary calculation start dates
+   - leave records
+
+   and then calculates each historical month.
+*/
 
 function getPreviousPendingSalary(
     employee,
     selectedMonth
 ) {
 
-    const selected =
+    const selectedParts =
         selectedMonth
             .split("-")
             .map(Number);
 
 
     if (
-        selected.length !== 2
+        selectedParts.length !== 2 ||
+        !Number.isFinite(selectedParts[0]) ||
+        !Number.isFinite(selectedParts[1])
     ) {
 
         return 0;
@@ -1249,13 +1312,10 @@ function getPreviousPendingSalary(
 
     const selectedDate =
         new Date(
-            selected[0],
-            selected[1] - 1,
+            selectedParts[0],
+            selectedParts[1] - 1,
             1
         );
-
-
-    let totalPending = 0;
 
 
     const months =
@@ -1263,8 +1323,10 @@ function getPreviousPendingSalary(
 
 
     /*
-       Salary transactions identify months
-       in which salary activity exists.
+       Salary transactions.
+
+       These identify months in which the employee
+       had salary activity.
     */
 
     state.transactions.forEach(
@@ -1290,21 +1352,20 @@ function getPreviousPendingSalary(
             }
 
 
-            const key =
+            const transactionMonth =
                 monthKey(
                     transaction.date
                 );
 
 
-            if (!key) {
-
+            if (!transactionMonth)
                 return;
-
-            }
 
 
             const parts =
-                key.split("-").map(Number);
+                transactionMonth
+                    .split("-")
+                    .map(Number);
 
 
             const transactionDate =
@@ -1320,32 +1381,35 @@ function getPreviousPendingSalary(
                 selectedDate
             ) {
 
-                months.add(key);
+                months.add(
+                    transactionMonth
+                );
 
             }
 
 
             /*
-               Also include the salary calculation
-               start month.
+               Also use salaryStartDate.
+
+               This is important for employees whose
+               salary calculation began on a particular
+               date.
             */
 
             if (
                 transaction.salaryStartDate
             ) {
 
-                const startKey =
+                const startMonth =
                     monthKey(
                         transaction.salaryStartDate
                     );
 
 
-                if (
-                    startKey
-                ) {
+                if (startMonth) {
 
                     const startParts =
-                        startKey
+                        startMonth
                             .split("-")
                             .map(Number);
 
@@ -1364,7 +1428,7 @@ function getPreviousPendingSalary(
                     ) {
 
                         months.add(
-                            startKey
+                            startMonth
                         );
 
                     }
@@ -1378,8 +1442,10 @@ function getPreviousPendingSalary(
 
 
     /*
-       Leave records can also identify a month
-       requiring payroll calculation.
+       Leave records.
+
+       Include every historical month touched
+       by a leave record.
     */
 
     state.leaves.forEach(
@@ -1396,51 +1462,96 @@ function getPreviousPendingSalary(
 
 
             if (
-                !leave.startDate
+                leave.startDate
             ) {
 
-                return;
+                const startMonth =
+                    monthKey(
+                        leave.startDate
+                    );
+
+
+                if (startMonth) {
+
+                    const parts =
+                        startMonth
+                            .split("-")
+                            .map(Number);
+
+
+                    const date =
+                        new Date(
+                            parts[0],
+                            parts[1] - 1,
+                            1
+                        );
+
+
+                    if (
+                        date <
+                        selectedDate
+                    ) {
+
+                        months.add(
+                            startMonth
+                        );
+
+                    }
+
+                }
 
             }
-
-
-            const key =
-                monthKey(
-                    leave.startDate
-                );
-
-
-            if (!key) {
-
-                return;
-
-            }
-
-
-            const parts =
-                key.split("-").map(Number);
-
-
-            const leaveDate =
-                new Date(
-                    parts[0],
-                    parts[1] - 1,
-                    1
-                );
 
 
             if (
-                leaveDate <
-                selectedDate
+                leave.endDate
             ) {
 
-                months.add(key);
+                const endMonth =
+                    monthKey(
+                        leave.endDate
+                    );
+
+
+                if (endMonth) {
+
+                    const parts =
+                        endMonth
+                            .split("-")
+                            .map(Number);
+
+
+                    const date =
+                        new Date(
+                            parts[0],
+                            parts[1] - 1,
+                            1
+                        );
+
+
+                    if (
+                        date <
+                        selectedDate
+                    ) {
+
+                        months.add(
+                            endMonth
+                        );
+
+                    }
+
+                }
 
             }
 
         }
     );
 
+
+    /*
+       If there is no historical salary/leave data,
+       there is no previous pending salary.
+    */
 
     if (
         months.size === 0
@@ -1451,6 +1562,10 @@ function getPreviousPendingSalary(
     }
 
 
+    /*
+       Find earliest historical month.
+    */
+
     let earliestDate =
         null;
 
@@ -1459,7 +1574,8 @@ function getPreviousPendingSalary(
         key => {
 
             const parts =
-                key.split("-").map(Number);
+                key.split("-")
+                    .map(Number);
 
 
             const date =
@@ -1471,8 +1587,19 @@ function getPreviousPendingSalary(
 
 
             if (
+                date >=
+                selectedDate
+            ) {
+
+                return;
+
+            }
+
+
+            if (
                 !earliestDate ||
-                date < earliestDate
+                date <
+                earliestDate
             ) {
 
                 earliestDate =
@@ -1499,6 +1626,9 @@ function getPreviousPendingSalary(
         );
 
 
+    let totalPending = 0;
+
+
     while (
         checkDate <
         selectedDate
@@ -1518,8 +1648,11 @@ function getPreviousPendingSalary(
 
 
         /*
-           Do not count a full-month leave as
-           pending salary.
+           Only add REAL outstanding salary.
+
+           Never add zero.
+
+           Do not count ON LEAVE as pending.
         */
 
         if (
@@ -1527,10 +1660,20 @@ function getPreviousPendingSalary(
             "ON LEAVE"
         ) {
 
-            totalPending +=
+            const pending =
                 Number(
                     payroll.pending || 0
                 );
+
+
+            if (
+                pending > 0
+            ) {
+
+                totalPending +=
+                    pending;
+
+            }
 
         }
 
@@ -1541,6 +1684,23 @@ function getPreviousPendingSalary(
                 checkDate.getMonth() + 1,
                 1
             );
+
+    }
+
+
+    /*
+       Final protection against -0 / NaN /
+       floating-point noise.
+    */
+
+    if (
+        !Number.isFinite(
+            totalPending
+        ) ||
+        totalPending <= 0.005
+    ) {
+
+        return 0;
 
     }
 
@@ -1570,11 +1730,8 @@ function getEmployeesOnLeave(
 
             if (
                 !leave.employeeId
-            ) {
-
+            )
                 return;
-
-            }
 
 
             const employee =
@@ -1583,11 +1740,8 @@ function getEmployeesOnLeave(
                 );
 
 
-            if (!employee) {
-
+            if (!employee)
                 return;
-
-            }
 
 
             if (
@@ -1930,24 +2084,32 @@ function renderDashboard() {
         );
 
 
+    /*
+       Only employees with REAL previous pending
+       balances are included.
+    */
+
     const previousPendingRows =
         state.employees
             .map(
-                employee => ({
+                employee => {
 
-                    employee,
-
-                    pending:
+                    const pending =
                         getPreviousPendingSalary(
                             employee,
                             month
-                        )
+                        );
 
-                })
+                    return {
+                        employee,
+                        pending
+                    };
+
+                }
             )
             .filter(
                 row =>
-                    row.pending > 0
+                    row.pending > 0.005
             );
 
 
@@ -2008,8 +2170,7 @@ function renderDashboard() {
         payroll.filter(
             row =>
                 row.status ===
-                "PENDING" &&
-                Number(row.pending || 0) > 0
+                "PENDING"
         ).length;
 
 
@@ -2085,7 +2246,9 @@ function renderDashboard() {
 
             ${
                 previousPendingRows.length
+
                     ?
+
                 `
 
                     <div
@@ -2182,7 +2345,9 @@ function renderDashboard() {
                     </div>
 
                 `
+
                     :
+
                 `
 
                     <div
@@ -2215,7 +2380,9 @@ function renderDashboard() {
         existingDashboardPreviousPending.outerHTML =
             dashboardPreviousPendingHTML;
 
-    } else if ($("dashboardTable")) {
+    } else if (
+        $("dashboardTable")
+    ) {
 
         $("dashboardTable").insertAdjacentHTML(
             "beforebegin",
@@ -2267,11 +2434,14 @@ function renderDashboard() {
 
         </thead>
 
+
         <tbody>
 
             ${
                 state.employees.length
+
                     ?
+
                 state.employees
                     .map(
                         (
@@ -2339,14 +2509,18 @@ function renderDashboard() {
                                     <td class="num">
 
                                         ${
-                                            previousPending > 0
+                                            previousPending > 0.005
+
                                                 ?
+
                                             `<b>
                                                 ${money(
                                                     previousPending
                                                 )}
                                             </b>`
+
                                                 :
+
                                             "-"
                                         }
 
@@ -2379,7 +2553,9 @@ function renderDashboard() {
                         }
                     )
                     .join("")
+
                     :
+
                 `
                     <tr>
 
@@ -2443,11 +2619,14 @@ function renderEmployees() {
 
         </thead>
 
+
         <tbody>
 
             ${
                 state.employees.length
+
                     ?
+
                 state.employees
                     .map(
                         employee => `
@@ -2525,7 +2704,9 @@ function renderEmployees() {
                         `
                     )
                     .join("")
+
                     :
+
                 `
                     <tr>
 
@@ -2670,11 +2851,14 @@ function renderTransactions() {
 
         </thead>
 
+
         <tbody>
 
             ${
                 rows.length
+
                     ?
+
                 rows
                     .map(
                         transaction => `
@@ -2764,7 +2948,9 @@ function renderTransactions() {
                         `
                     )
                     .join("")
+
                     :
+
                 `
                     <tr>
 
@@ -2842,11 +3028,14 @@ function renderLeave() {
 
         </thead>
 
+
         <tbody>
 
             ${
                 rows.length
+
                     ?
+
                 rows
                     .map(
                         leave => `
@@ -2934,7 +3123,9 @@ function renderLeave() {
                         `
                     )
                     .join("")
+
                     :
+
                 `
                     <tr>
 
@@ -3067,10 +3258,7 @@ function renderReport() {
         rows.filter(
             row =>
                 row.payroll.status ===
-                "PENDING" &&
-                Number(
-                    row.payroll.pending || 0
-                ) > 0
+                "PENDING"
         ).length;
 
 
@@ -3108,21 +3296,24 @@ function renderReport() {
     const previousPendingRows =
         state.employees
             .map(
-                employee => ({
+                employee => {
 
-                    employee,
-
-                    pending:
+                    const pending =
                         getPreviousPendingSalary(
                             employee,
                             month
-                        )
+                        );
 
-                })
+                    return {
+                        employee,
+                        pending
+                    };
+
+                }
             )
             .filter(
                 row =>
-                    row.pending > 0
+                    row.pending > 0.005
             );
 
 
@@ -3234,8 +3425,11 @@ function renderReport() {
 
             ${
                 previousPendingRows.length
+
                     ?
+
                 `
+
                     <div
                         style="
                             overflow-x:auto;
@@ -3273,15 +3467,19 @@ function renderReport() {
                                                 <tr>
 
                                                     <td>
+
                                                         <b>
                                                             ${escapeHTML(
                                                                 row.employee.id
                                                             )}
                                                         </b>
+
                                                         -
+
                                                         ${escapeHTML(
                                                             row.employee.name
                                                         )}
+
                                                     </td>
 
                                                     <td class="num">
@@ -3303,12 +3501,34 @@ function renderReport() {
 
                             </tbody>
 
+                            <tfoot>
+
+                                <tr>
+
+                                    <th>
+                                        Total Previous Pending
+                                    </th>
+
+                                    <th class="num">
+                                        ${money(
+                                            totalPreviousPending
+                                        )}
+                                    </th>
+
+                                </tr>
+
+                            </tfoot>
+
                         </table>
 
                     </div>
+
                 `
+
                     :
+
                 `
+
                     <div
                         class="empty"
                         style="
@@ -3317,6 +3537,7 @@ function renderReport() {
                     >
                         No previous salary pending.
                     </div>
+
                 `
             }
 
@@ -3342,7 +3563,9 @@ function renderReport() {
                 </div>
             `;
 
-    } else if ($("reportTable")) {
+    } else if (
+        $("reportTable")
+    ) {
 
         $("reportTable").insertAdjacentHTML(
             "beforebegin",
@@ -3404,11 +3627,14 @@ function renderReport() {
 
         </thead>
 
+
         <tbody>
 
             ${
                 rows.length
+
                     ?
+
                 rows
                     .map(
                         row => `
@@ -3507,7 +3733,9 @@ function renderReport() {
                         `
                     )
                     .join("")
+
                     :
+
                 `
                     <tr>
 
@@ -3560,6 +3788,7 @@ function openModal(
         event => {
 
             event.preventDefault();
+
 
             submitFunction(
                 new FormData(
@@ -3649,6 +3878,7 @@ function addEmployee() {
 
             </div>
 
+
             <div class="form-field">
 
                 <label>
@@ -3663,6 +3893,7 @@ function addEmployee() {
                 >
 
             </div>
+
 
             <div class="form-field">
 
@@ -3679,6 +3910,7 @@ function addEmployee() {
                 >
 
             </div>
+
 
             <div class="form-field">
 
@@ -3698,6 +3930,7 @@ function addEmployee() {
             </div>
 
         </div>
+
 
         <div class="form-actions">
 
@@ -3818,6 +4051,7 @@ function editEmployee(id) {
 
             </div>
 
+
             <div class="form-field">
 
                 <label>
@@ -3833,6 +4067,7 @@ function editEmployee(id) {
                 >
 
             </div>
+
 
             <div class="form-field">
 
@@ -3850,6 +4085,7 @@ function editEmployee(id) {
                 >
 
             </div>
+
 
             <div class="form-field">
 
@@ -3869,6 +4105,7 @@ function editEmployee(id) {
             </div>
 
         </div>
+
 
         <div class="form-actions">
 
@@ -3992,9 +4229,9 @@ function transactionFormHTML(
 ) {
 
     const today =
-        new Date()
-            .toISOString()
-            .slice(0, 10);
+        formatDateInput(
+            new Date()
+        );
 
 
     const employeeId =
@@ -4026,16 +4263,6 @@ function transactionFormHTML(
             ? transaction.note || ""
             : "";
 
-
-    /*
-       Salary Calculation From.
-
-       For a new salary transaction, default to
-       the transaction date.
-
-       For an existing salary transaction, use
-       its saved salaryStartDate.
-    */
 
     const salaryStartDate =
         transaction &&
@@ -4073,6 +4300,7 @@ function transactionFormHTML(
 
             </div>
 
+
             <div class="form-field">
 
                 <label>
@@ -4089,6 +4317,7 @@ function transactionFormHTML(
                 >
 
             </div>
+
 
             <div class="form-field">
 
@@ -4161,6 +4390,7 @@ function transactionFormHTML(
 
             </div>
 
+
             <div class="form-field">
 
                 <label>
@@ -4179,6 +4409,7 @@ function transactionFormHTML(
                 >
 
             </div>
+
 
             <div
                 class="form-field full"
@@ -4212,12 +4443,13 @@ function transactionFormHTML(
                 >
                     Enter the date from which this
                     employee's salary should be calculated
-                    for the selected month. For example,
-                    if the employee returns from vacation
-                    on 20 August, select 20 August.
+                    for the selected month.
+                    Example: if the employee returns from
+                    vacation on 20 August, select 20 August.
                 </small>
 
             </div>
+
 
             <div class="form-field full">
 
@@ -4236,6 +4468,7 @@ function transactionFormHTML(
             </div>
 
         </div>
+
 
         <div class="form-actions">
 
@@ -4271,8 +4504,8 @@ function transactionFormHTML(
 
 function validateSalaryStartDate(
     type,
-    date,
-    salaryStartDate
+    salaryStartDate,
+    transactionDate
 ) {
 
     if (
@@ -4284,7 +4517,9 @@ function validateSalaryStartDate(
     }
 
 
-    if (!salaryStartDate) {
+    if (
+        !salaryStartDate
+    ) {
 
         return true;
 
@@ -4295,7 +4530,9 @@ function validateSalaryStartDate(
         monthKey(
             salaryStartDate
         ) !==
-        monthKey(date)
+        monthKey(
+            transactionDate
+        )
     ) {
 
         alert(
@@ -4387,8 +4624,8 @@ function addTransaction() {
             if (
                 !validateSalaryStartDate(
                     type,
-                    date,
-                    salaryStartDate
+                    salaryStartDate,
+                    date
                 )
             ) {
 
@@ -4583,8 +4820,8 @@ function editTransaction(id) {
             if (
                 !validateSalaryStartDate(
                     type,
-                    date,
-                    salaryStartDate
+                    salaryStartDate,
+                    date
                 )
             ) {
 
@@ -4734,6 +4971,7 @@ function leaveFormHTML(
 
             </div>
 
+
             <div class="form-field">
 
                 <label>
@@ -4753,6 +4991,7 @@ function leaveFormHTML(
 
             </div>
 
+
             <div class="form-field">
 
                 <label>
@@ -4771,6 +5010,7 @@ function leaveFormHTML(
                 >
 
             </div>
+
 
             <div class="form-field">
 
@@ -4793,6 +5033,7 @@ function leaveFormHTML(
 
             </div>
 
+
             <div class="form-field">
 
                 <label>
@@ -4810,6 +5051,7 @@ function leaveFormHTML(
             </div>
 
         </div>
+
 
         <div class="form-actions">
 
@@ -4881,8 +5123,8 @@ function addLeave() {
             if (
                 startDate &&
                 endDate &&
-                new Date(endDate) <
-                new Date(startDate)
+                parseDateOnly(endDate) <
+                parseDateOnly(startDate)
             ) {
 
                 alert(
@@ -4984,8 +5226,8 @@ function editLeave(id) {
             if (
                 startDate &&
                 endDate &&
-                new Date(endDate) <
-                new Date(startDate)
+                parseDateOnly(endDate) <
+                parseDateOnly(startDate)
             ) {
 
                 alert(
