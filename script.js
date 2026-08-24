@@ -270,23 +270,6 @@ function getMonthlySalaryPaid(
 
 /* =====================================================
    GET SALARY CALCULATION START DATE
-=====================================================
-
-   The Salary Calculation From date is stored on
-   salary transactions.
-
-   Example:
-
-   Salary transaction:
-   Date: 25/08/2026
-   Salary Calculation From: 20/08/2026
-
-   The August salary will be calculated from
-   20 August through 31 August.
-
-   If no salary calculation start date exists
-   for the selected month, the employee's salary
-   starts from the 1st of that month.
 ===================================================== */
 
 function getSalaryCalculationStartDate(
@@ -294,58 +277,38 @@ function getSalaryCalculationStartDate(
     month
 ) {
 
+    if (!employee) {
+        return `${month}-01`;
+    }
+
     const salaryTransactions =
         state.transactions
             .filter(
                 transaction =>
-
-                    transaction.employeeId ===
-                    employee.id &&
-
-                    transaction.type ===
-                    "salary" &&
-
-                    monthKey(
-                        transaction.date
-                    ) === month &&
-
+                    transaction.employeeId === employee.id &&
+                    transaction.type === "salary" &&
+                    monthKey(transaction.date) === month &&
                     transaction.salaryStartDate
             )
             .sort(
-                (
-                    a,
-                    b
-                ) =>
-                    new Date(
-                        b.salaryStartDate
-                    ) -
-                    new Date(
-                        a.salaryStartDate
-                    )
+                (a, b) =>
+                    new Date(b.salaryStartDate + "T00:00:00") -
+                    new Date(a.salaryStartDate + "T00:00:00")
             );
 
-
-    if (
-        salaryTransactions.length
-    ) {
+    if (salaryTransactions.length) {
 
         const date =
-            salaryTransactions[0]
-                .salaryStartDate;
+            salaryTransactions[0].salaryStartDate;
 
         if (
             monthKey(date) === month
         ) {
-
             return date;
-
         }
-
     }
 
-
     return `${month}-01`;
-
 }
 
 
@@ -365,33 +328,21 @@ function getSalaryStartDay(
             month
         );
 
-
     const [year, monthNumber] =
         month.split("-").map(Number);
 
-
     const date =
         new Date(
-            startDate +
-            "T00:00:00"
+            startDate + "T00:00:00"
         );
 
-
-    /*
-       If the stored date is not in the
-       selected month, use the first day.
-    */
-
     if (
-        isNaN(date) ||
+        isNaN(date.getTime()) ||
         date.getFullYear() !== year ||
         date.getMonth() !== monthNumber - 1
     ) {
-
         return 1;
-
     }
-
 
     return Math.min(
         Math.max(
@@ -400,7 +351,6 @@ function getSalaryStartDay(
         ),
         daysInMonth
     );
-
 }
 
 
@@ -414,15 +364,11 @@ function isEmployeeOnLeave(
 ) {
 
     if (!employee) {
-
         return false;
-
     }
-
 
     const [year, monthNumber] =
         month.split("-").map(Number);
-
 
     const daysInMonth =
         new Date(
@@ -431,14 +377,12 @@ function isEmployeeOnLeave(
             0
         ).getDate();
 
-
     const monthStart =
         new Date(
             year,
             monthNumber - 1,
             1
         );
-
 
     const monthEnd =
         new Date(
@@ -447,47 +391,29 @@ function isEmployeeOnLeave(
             daysInMonth
         );
 
-
-    /*
-       An employee is considered ON LEAVE for
-       the whole selected month only when the
-       leave covers every day of that month.
-    */
-
     return state.leaves.some(
         leave => {
 
             if (
-                leave.employeeId !==
-                employee.id
+                leave.employeeId !== employee.id
             ) {
-
                 return false;
-
             }
-
 
             /*
                No dates:
-               retain the original behaviour.
-               Such a leave record is treated as
-               applying to the selected month.
+               preserve original behaviour.
             */
 
             if (
                 !leave.startDate &&
                 !leave.endDate
             ) {
-
                 return true;
-
             }
 
-
             /*
-               Start date but no end date:
-               only treat as full-month leave when
-               it starts on/before the first day.
+               Start date but no end date.
             */
 
             if (
@@ -501,20 +427,11 @@ function isEmployeeOnLeave(
                         "T00:00:00"
                     );
 
-                return (
-                    start <= monthStart &&
-                    monthKey(
-                        leave.startDate
-                    ) <= month
-                );
-
+                return start <= monthStart;
             }
 
-
             /*
-               End date but no start date:
-               treat as full-month leave if the
-               end date reaches the end of month.
+               End date but no start date.
             */
 
             if (
@@ -529,9 +446,11 @@ function isEmployeeOnLeave(
                     );
 
                 return end >= monthEnd;
-
             }
 
+            /*
+               Both dates.
+            */
 
             const leaveStart =
                 new Date(
@@ -539,22 +458,18 @@ function isEmployeeOnLeave(
                     "T00:00:00"
                 );
 
-
             const leaveEnd =
                 new Date(
                     leave.endDate +
                     "T00:00:00"
                 );
 
-
             return (
                 leaveStart <= monthStart &&
                 leaveEnd >= monthEnd
             );
-
         }
     );
-
 }
 
 
@@ -572,14 +487,12 @@ function getLeaveDaysForMonth(
     const [year, monthNumber] =
         month.split("-").map(Number);
 
-
     const monthStart =
         new Date(
             year,
             monthNumber - 1,
             1
         );
-
 
     const monthEnd =
         new Date(
@@ -588,13 +501,8 @@ function getLeaveDaysForMonth(
             daysInMonth
         );
 
-
     /*
-       Salary calculation begins at the selected
-       salary start day.
-
-       Therefore leave before that day does not
-       affect the salary calculation.
+       Salary calculation starts at salaryStartDay.
     */
 
     const salaryStart =
@@ -604,15 +512,12 @@ function getLeaveDaysForMonth(
             salaryStartDay
         );
 
-
     let leaveDays = 0;
-
 
     state.leaves
         .filter(
             leave =>
-                leave.employeeId ===
-                employee.id
+                leave.employeeId === employee.id
         )
         .forEach(
             leave => {
@@ -620,8 +525,7 @@ function getLeaveDaysForMonth(
                 /*
                    No dates.
 
-                   Use manually entered number of days
-                   if supplied.
+                   Use manually entered days.
                 */
 
                 if (
@@ -635,9 +539,7 @@ function getLeaveDaysForMonth(
                         );
 
                     return;
-
                 }
-
 
                 /*
                    Start date but no end date.
@@ -654,35 +556,25 @@ function getLeaveDaysForMonth(
                             "T00:00:00"
                         );
 
-
                     const actualStart =
-                        leaveStart >
-                        salaryStart
+                        leaveStart > salaryStart
                             ? leaveStart
                             : salaryStart;
 
-
                     if (
-                        actualStart >
-                        monthEnd
+                        actualStart > monthEnd
                     ) {
-
                         return;
-
                     }
-
-
-                    /*
-                       If days were manually entered,
-                       use those days.
-
-                       Otherwise calculate through the
-                       end of the selected month.
-                    */
 
                     if (
                         Number(leave.days || 0) > 0
                     ) {
+
+                        /*
+                           Manually entered leave days
+                           are used when supplied.
+                        */
 
                         leaveDays +=
                             Number(
@@ -695,23 +587,18 @@ function getLeaveDaysForMonth(
                             monthEnd.getTime() -
                             actualStart.getTime();
 
-
                         const actualDays =
                             Math.floor(
                                 difference /
                                 (1000 * 60 * 60 * 24)
                             ) + 1;
 
-
                         leaveDays +=
                             actualDays;
-
                     }
 
                     return;
-
                 }
-
 
                 /*
                    End date but no start date.
@@ -728,23 +615,11 @@ function getLeaveDaysForMonth(
                             "T00:00:00"
                         );
 
-
-                    const actualEnd =
-                        leaveEnd <
-                        monthEnd
-                            ? leaveEnd
-                            : monthEnd;
-
-
                     if (
-                        actualEnd <
-                        salaryStart
+                        leaveEnd < salaryStart
                     ) {
-
                         return;
-
                     }
-
 
                     if (
                         Number(leave.days || 0) > 0
@@ -755,12 +630,30 @@ function getLeaveDaysForMonth(
                                 leave.days
                             );
 
+                    } else {
+
+                        const difference =
+                            Math.min(
+                                leaveEnd.getTime(),
+                                monthEnd.getTime()
+                            ) -
+                            salaryStart.getTime();
+
+                        const actualDays =
+                            Math.floor(
+                                difference /
+                                (1000 * 60 * 60 * 24)
+                            ) + 1;
+
+                        leaveDays +=
+                            Math.max(
+                                0,
+                                actualDays
+                            );
                     }
 
                     return;
-
                 }
-
 
                 /*
                    Both start and end dates exist.
@@ -772,21 +665,11 @@ function getLeaveDaysForMonth(
                         "T00:00:00"
                     );
 
-
                 const leaveEnd =
                     new Date(
                         leave.endDate +
                         "T00:00:00"
                     );
-
-
-                /*
-                   Find the overlap between:
-
-                   - salary calculation period
-                   - month
-                   - unpaid leave
-                */
 
                 const actualStart =
                     [
@@ -803,42 +686,48 @@ function getLeaveDaysForMonth(
                                 : latest
                     );
 
-
                 const actualEnd =
-                    leaveEnd <
-                    monthEnd
+                    leaveEnd < monthEnd
                         ? leaveEnd
                         : monthEnd;
 
-
                 if (
-                    actualStart >
-                    actualEnd
+                    actualStart > actualEnd
                 ) {
-
                     return;
-
                 }
 
+                /*
+                   If days were manually entered,
+                   use them.
+                */
 
-                const difference =
-                    actualEnd.getTime() -
-                    actualStart.getTime();
+                if (
+                    Number(leave.days || 0) > 0
+                ) {
 
+                    leaveDays +=
+                        Number(
+                            leave.days
+                        );
 
-                const actualDays =
-                    Math.floor(
-                        difference /
-                        (1000 * 60 * 60 * 24)
-                    ) + 1;
+                } else {
 
+                    const difference =
+                        actualEnd.getTime() -
+                        actualStart.getTime();
 
-                leaveDays +=
-                    actualDays;
+                    const actualDays =
+                        Math.floor(
+                            difference /
+                            (1000 * 60 * 60 * 24)
+                        ) + 1;
 
+                    leaveDays +=
+                        actualDays;
+                }
             }
         );
-
 
     return Math.min(
         Math.max(
@@ -852,7 +741,6 @@ function getLeaveDaysForMonth(
             1
         )
     );
-
 }
 
 
@@ -870,16 +758,13 @@ function payrollFor(
             employee.salary || 0
         );
 
-
     const foodAllowance =
         Number(
             employee.food || 0
         );
 
-
     const [year, monthNumber] =
         month.split("-").map(Number);
-
 
     const daysInMonth =
         new Date(
@@ -888,16 +773,17 @@ function payrollFor(
             0
         ).getDate();
 
-
     /*
-       Salary calculation start day.
+       Determine the day from which salary
+       should be calculated.
 
        Example:
 
-       August 20 = salaryStartDay 20
+       Salary Calculation From = 20 August
 
-       Payable calendar days:
-       20,21,22,...31 = 12 days
+       Salary period:
+       20 August through 31 August
+       = 12 calendar days.
     */
 
     const salaryStartDay =
@@ -907,7 +793,6 @@ function payrollFor(
             daysInMonth
         );
 
-
     const salaryPeriodDays =
         Math.max(
             0,
@@ -916,10 +801,9 @@ function payrollFor(
             1
         );
 
-
     /*
-       If employee is on leave for the complete
-       selected month, no salary or food is due.
+       Full-month leave means no salary or food
+       is due for this month.
     */
 
     const employeeOnFullLeave =
@@ -928,7 +812,6 @@ function payrollFor(
             month
         );
 
-
     if (
         employeeOnFullLeave
     ) {
@@ -936,7 +819,7 @@ function payrollFor(
         return {
 
             salary:
-                0,
+                basicSalary,
 
             food:
                 0,
@@ -977,6 +860,12 @@ function payrollFor(
             leaveDays:
                 daysInMonth,
 
+            payableDays:
+                0,
+
+            salaryStartDay:
+                salaryStartDay,
+
             salaryStartDate:
                 `${month}-${String(
                     salaryStartDay
@@ -984,23 +873,12 @@ function payrollFor(
 
             salaryPeriodDays:
                 0
-
         };
-
     }
 
-
     /*
-       Calculate unpaid leave.
-
-       Important:
-
-       Leave before the salary calculation start
-       date is ignored.
-
-       This allows an employee to return from
-       vacation and start salary from the return
-       date.
+       Calculate leave only inside the actual
+       salary calculation period.
     */
 
     const leaveDays =
@@ -1011,10 +889,8 @@ function payrollFor(
             salaryStartDay
         );
 
-
     /*
-       Number of days for which salary can actually
-       be paid.
+       Actual payable days.
     */
 
     const payableDays =
@@ -1024,10 +900,16 @@ function payrollFor(
             leaveDays
         );
 
-
     /*
+       IMPORTANT:
+
        Daily salary is based on the actual number
-       of days in the selected month.
+       of days in the selected calendar month.
+
+       Example:
+
+       AED 2,500 / 31 days
+       = AED 80.645161 per day.
     */
 
     const dailySalary =
@@ -1035,6 +917,19 @@ function payrollFor(
             ? basicSalary / daysInMonth
             : 0;
 
+    /*
+       Salary due is ONLY for the period beginning
+       at Salary Calculation From.
+
+       Example:
+
+       AED 2,500
+       Start = 20 August
+       Days = 12
+
+       Salary due =
+       2500 / 31 × 12
+    */
 
     const salaryDue =
         Math.max(
@@ -1043,9 +938,8 @@ function payrollFor(
             payableDays
         );
 
-
     /*
-       Salary already paid.
+       Salary payments recorded for this month.
     */
 
     const salaryPaidRaw =
@@ -1054,13 +948,23 @@ function payrollFor(
             month
         );
 
+    /*
+       Never allow paid salary to exceed the
+       salary actually due for the selected period.
+    */
 
     const salaryPaid =
         Math.min(
-            salaryPaidRaw,
+            Math.max(
+                0,
+                salaryPaidRaw
+            ),
             salaryDue
         );
 
+    /*
+       Remaining unpaid salary.
+    */
 
     const pendingSalary =
         Math.max(
@@ -1069,10 +973,8 @@ function payrollFor(
             salaryPaid
         );
 
-
     let status =
         "PENDING";
-
 
     if (
         salaryDue <= 0
@@ -1082,8 +984,7 @@ function payrollFor(
             "FULLY PAID";
 
     } else if (
-        salaryPaid >=
-        salaryDue
+        salaryPaid >= salaryDue
     ) {
 
         status =
@@ -1095,9 +996,7 @@ function payrollFor(
 
         status =
             "PARTIALLY PAID";
-
     }
-
 
     const advances =
         getMonthlyTransactionTotal(
@@ -1106,7 +1005,6 @@ function payrollFor(
             "advance"
         );
 
-
     const loanRepayments =
         getMonthlyTransactionTotal(
             employee,
@@ -1114,14 +1012,12 @@ function payrollFor(
             "loan_repayment"
         );
 
-
     const adjustments =
         getMonthlyTransactionTotal(
             employee,
             month,
             "adjustment"
         );
-
 
     return {
 
@@ -1160,11 +1056,8 @@ function payrollFor(
             `${month}-${String(
                 salaryStartDay
             ).padStart(2, "0")}`
-
     };
-
 }
-
 
 /* =====================================================
    MONTHLY TRANSACTION TOTAL
