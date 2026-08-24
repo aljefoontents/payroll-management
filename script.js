@@ -1976,12 +1976,10 @@ function renderDashboard() {
         ).length;
 
 
-    const pendingEmployees =
-        payroll.filter(
-            row =>
-                row.status ===
-                "PENDING"
-        ).length;
+    const pendingEmployees = employees.filter(employee => {
+    const payroll = payrollFor(employee, selectedMonth);
+    return payroll.pendingSalary > 0;
+});
 
 
     if ($("statEmployees"))
