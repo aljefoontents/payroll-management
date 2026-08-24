@@ -4671,10 +4671,59 @@ if ($("printReportBtn"))
     $("printReportBtn").onclick =
         () => {
 
+            const reportMonth =
+                $("reportMonth")
+                    ? $("reportMonth").value
+                    : "";
+
+            if (!reportMonth) {
+                window.print();
+                return;
+            }
+
+            const [year, month] =
+                reportMonth.split("-").map(Number);
+
+            const monthName =
+                new Date(
+                    year,
+                    month - 1,
+                    1
+                ).toLocaleString(
+                    "en-AE",
+                    {
+                        month: "long"
+                    }
+                );
+
+            const reportDateText =
+                `${monthName} ${year}`;
+
+            const clock =
+                $("clock");
+
+            const originalClock =
+                clock
+                    ? clock.textContent
+                    : "";
+
+            if (clock) {
+                clock.textContent =
+                    `Report Month: ${reportDateText}`;
+            }
+
             window.print();
 
-        };
+            setTimeout(() => {
 
+                if (clock) {
+                    clock.textContent =
+                        originalClock;
+                }
+
+            }, 1000);
+
+        };
 
 /* =====================================================
    DIGITAL CLOCK
