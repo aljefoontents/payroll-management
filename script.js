@@ -3075,17 +3075,10 @@ function renderLeave() {
 
 function renderReport() {
 
-    const reportMonth =
-        $("reportMonth");
-
-
-    if (!reportMonth)
-        return;
-
-
-    const month =
-        reportMonth.value ||
-        currentMonth();
+   const reportMonth =
+    $("reportMonth")?.value ||
+    $("dashboardMonth")?.value ||
+    currentMonth();
 
 
     reportMonth.value =
