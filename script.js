@@ -5364,12 +5364,8 @@ function printPayrollReport() {
             ? $("reportMonth").value
             : currentMonth();
 
-
     const formattedMonth =
-        formatReportMonth(
-            reportMonth
-        );
-
+        formatReportMonth(reportMonth);
 
     if (!$("reportTable")) {
 
@@ -5378,7 +5374,6 @@ function printPayrollReport() {
         return;
 
     }
-
 
     /*
        Prevent duplicate temporary headers.
@@ -5389,27 +5384,23 @@ function printPayrollReport() {
             "temporaryPayrollPrintHeader"
         );
 
-
     if (existingHeader) {
 
         existingHeader.remove();
 
     }
 
-
     /*
-       Create a temporary print heading.
+       Create temporary print heading.
+       The selected report month appears
+       NEXT TO "MONTHLY PAYROLL REPORT".
     */
 
     const printHeader =
-        document.createElement(
-            "div"
-        );
-
+        document.createElement("div");
 
     printHeader.id =
         "temporaryPayrollPrintHeader";
-
 
     printHeader.innerHTML = `
 
@@ -5439,29 +5430,16 @@ function printPayrollReport() {
                     margin-bottom:4px;
                 "
             >
-                MONTHLY PAYROLL REPORT
-            </div>
-
-            <div
-                style="
-                    font-size:17px;
-                    font-weight:bold;
-                "
-            >
-                ${escapeHTML(
-                    formattedMonth
-                )}
+                MONTHLY PAYROLL REPORT -
+                ${escapeHTML(formattedMonth)}
             </div>
 
         </div>
 
     `;
 
-
     /*
-       Put the heading directly before the report table.
-       This avoids changing the navigation, report
-       section structure, or page layout.
+       Put heading directly before report table.
     */
 
     $("reportTable").parentNode.insertBefore(
@@ -5469,10 +5447,8 @@ function printPayrollReport() {
         $("reportTable")
     );
 
-
     /*
-       Remove any previous print date element
-       created by this script.
+       Remove any previous temporary print date.
     */
 
     const oldPrintDate =
@@ -5480,13 +5456,11 @@ function printPayrollReport() {
             "temporaryPayrollPrintDate"
         );
 
-
     if (oldPrintDate) {
 
         oldPrintDate.remove();
 
     }
-
 
     /*
        Print.
@@ -5494,10 +5468,8 @@ function printPayrollReport() {
 
     window.print();
 
-
     /*
-       Remove temporary heading after the print
-       dialog has closed.
+       Remove temporary heading after printing.
     */
 
     setTimeout(
@@ -5507,7 +5479,6 @@ function printPayrollReport() {
                 document.getElementById(
                     "temporaryPayrollPrintHeader"
                 );
-
 
             if (header) {
 
@@ -5525,42 +5496,6 @@ function printPayrollReport() {
 if ($("printReportBtn"))
     $("printReportBtn").onclick =
         printPayrollReport;
-
-
-/* =====================================================
-   DIGITAL CLOCK
-===================================================== */
-
-function updateClock() {
-
-    const clock =
-        $("clock");
-
-
-    if (!clock)
-        return;
-
-
-    clock.textContent =
-        new Date().toLocaleString(
-            "en-AE",
-            {
-                dateStyle: "full",
-                timeStyle: "medium"
-            }
-        );
-
-}
-
-
-setInterval(
-    updateClock,
-    1000
-);
-
-
-updateClock();
-
 
 /* =====================================================
    INITIAL MONTHS
