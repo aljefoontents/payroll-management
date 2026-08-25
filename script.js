@@ -5231,11 +5231,171 @@ if ($("reportMonth"))
    No selected-month print-date modification.
 ===================================================== */
 
+/* =====================================================
+   PRINT REPORT
+   SHOW SELECTED REPORT MONTH
+===================================================== */
+
 if ($("printReportBtn"))
     $("printReportBtn").onclick =
         () => {
 
+            const reportMonth =
+                $("reportMonth")
+                    ? $("reportMonth").value
+                    : currentMonth();
+
+
+            let reportTitle =
+                "Monthly Payroll Report";
+
+
+            if (reportMonth) {
+
+                const parts =
+                    reportMonth
+                        .split("-")
+                        .map(Number);
+
+
+                if (
+                    parts.length === 2 &&
+                    !isNaN(parts[0]) &&
+                    !isNaN(parts[1])
+                ) {
+
+                    const reportDate =
+                        new Date(
+                            parts[0],
+                            parts[1] - 1,
+                            1
+                        );
+
+
+                    reportTitle =
+                        `Monthly Payroll Report - ${
+                            reportDate.toLocaleString(
+                                "en-AE",
+                                {
+                                    month: "long",
+                                    year: "numeric"
+                                }
+                            )
+                        };
+
+                }
+
+            }
+
+
+            /*
+               Create a temporary print heading.
+               It exists only while printing and does
+               not change the normal screen layout.
+            */
+
+            const printHeader =
+                document.createElement("div");
+
+
+            printHeader.id =
+                "temporaryPrintReportHeader";
+
+
+            printHeader.innerHTML = `
+
+                <div
+                    style="
+                        text-align:center;
+                        margin-bottom:20px;
+                        font-family:Arial,sans-serif;
+                    "
+                >
+
+                    <h1
+                        style="
+                            margin:0 0 6px 0;
+                            font-size:24px;
+                        "
+                    >
+                        AL JEFOON TENTS
+                    </h1>
+
+                    <h2
+                        style="
+                            margin:0;
+                            font-size:20px;
+                        "
+                    >
+                        ${escapeHTML(
+                            reportTitle
+                        )}
+                    </h2>
+
+                </div>
+
+            `;
+
+
+            /*
+               Put the heading at the beginning of
+               the Reports section.
+            */
+
+            const reportSection =
+                document.querySelector(
+                    '[data-section="reports"]'
+                ) ||
+                $("reports");
+
+
+            if (reportSection) {
+
+                reportSection.insertBefore(
+                    printHeader,
+                    reportSection.firstChild
+                );
+
+            } else {
+
+                document.body.insertBefore(
+                    printHeader,
+                    document.body.firstChild
+                );
+
+            }
+
+
+            /*
+               Print the selected report.
+            */
+
             window.print();
+
+
+            /*
+               Remove temporary heading after
+               printing/canceling print dialog.
+            */
+
+            setTimeout(
+                () => {
+
+                    const header =
+                        document.getElementById(
+                            "temporaryPrintReportHeader"
+                        );
+
+
+                    if (header) {
+
+                        header.remove();
+
+                    }
+
+                },
+                1000
+            );
 
         };
 
