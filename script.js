@@ -5245,18 +5245,12 @@ if ($("printReportBtn"))
                     ? $("reportMonth").value
                     : currentMonth();
 
-
-            let reportTitle =
-                "Monthly Payroll Report";
-
+            let monthTitle = "";
 
             if (reportMonth) {
 
                 const parts =
-                    reportMonth
-                        .split("-")
-                        .map(Number);
-
+                    reportMonth.split("-").map(Number);
 
                 if (
                     parts.length === 2 &&
@@ -5271,21 +5265,58 @@ if ($("printReportBtn"))
                             1
                         );
 
-
-                    reportTitle =
-                        `Monthly Payroll Report - ${
-                            reportDate.toLocaleString(
-                                "en-AE",
-                                {
-                                    month: "long",
-                                    year: "numeric"
-                                }
-                            )
-                        };
+                    monthTitle =
+                        reportDate.toLocaleString(
+                            "en-AE",
+                            {
+                                month: "long",
+                                year: "numeric"
+                            }
+                        );
 
                 }
 
             }
+
+
+            /*
+               Save the original report title.
+            */
+
+            const originalTitle =
+                document.title;
+
+
+            /*
+               Change browser print title temporarily.
+            */
+
+            document.title =
+                `AL JEFOON TENTS - Monthly Payroll Report - ${monthTitle}`;
+
+
+            /*
+               Print.
+            */
+
+            window.print();
+
+
+            /*
+               Restore original title.
+            */
+
+            setTimeout(
+                () => {
+
+                    document.title =
+                        originalTitle;
+
+                },
+                1000
+            );
+
+        };
 
 
             /*
