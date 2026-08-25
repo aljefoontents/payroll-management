@@ -2,12 +2,13 @@
    AL JEFOON TENTS
    PAYROLL SYSTEM
    SCRIPT.JS
-   VERSION 2.6
+   VERSION 2.7
 
    FEATURES:
    - Employee IDs start at EMP003
    - Basic salary only used for salary calculations
    - Food allowance displayed separately
+   - Food allowance editable
    - Salary / Advance / Loan editing
    - Leave editing
    - Leave dates optional
@@ -17,10 +18,13 @@
    - Salary calculation can start from a selected date
    - Employees returning from vacation can be paid
      from their return/salary-start date
+   - Partial salary payments supported
+   - Remaining salary calculated automatically
    - Previous month pending salaries shown in reports
    - Previous month pending salaries shown on dashboard
+   - Zero pending balances are not shown as pending
+   - Monthly report print shows selected report month
    - Dark mode
-   - NO PRINT DATE CHANGE
 ===================================================== */
 
 
@@ -101,6 +105,40 @@ function money(value) {
 }
 
 
+/*
+   IMPORTANT:
+
+   This helper is used only for displaying pending
+   balances.
+
+   Anything equal to zero or an extremely small
+   floating-point remainder is treated as zero.
+*/
+
+function positiveBalance(value) {
+
+    const amount =
+        Number(value || 0);
+
+    return amount > 0.009
+        ? amount
+        : 0;
+
+}
+
+
+function pendingMoney(value) {
+
+    const amount =
+        positiveBalance(value);
+
+    return amount > 0
+        ? money(amount)
+        : "-";
+
+}
+
+
 function monthKey(date) {
 
     if (!date) return "";
@@ -127,6 +165,58 @@ function currentMonth() {
     return `${d.getFullYear()}-${String(
         d.getMonth() + 1
     ).padStart(2, "0")}`;
+
+}
+
+
+function formatReportMonth(month) {
+
+    if (!month) {
+
+        return "";
+
+    }
+
+
+    const parts =
+        String(month)
+            .split("-")
+            .map(Number);
+
+
+    if (
+        parts.length !== 2 ||
+        isNaN(parts[0]) ||
+        isNaN(parts[1])
+    ) {
+
+        return "";
+
+    }
+
+
+    const date =
+        new Date(
+            parts[0],
+            parts[1] - 1,
+            1
+        );
+
+
+    if (isNaN(date.getTime())) {
+
+        return "";
+
+    }
+
+
+    return date.toLocaleString(
+        "en-AE",
+        {
+            month: "long",
+            year: "numeric"
+        }
+    );
 
 }
 
@@ -855,6 +945,46 @@ function getLeaveDaysForMonth(
 
 
 /* =====================================================
+   MONTHLY TRANSACTION TOTAL
+===================================================== */
+
+function getMonthlyTransactionTotal(
+    employee,
+    month,
+    type
+) {
+
+    return state.transactions
+        .filter(
+            transaction =>
+
+                transaction.employeeId ===
+                employee.id &&
+
+                transaction.type ===
+                type &&
+
+                monthKey(
+                    transaction.date
+                ) === month
+        )
+        .reduce(
+            (
+                total,
+                transaction
+            ) =>
+                total +
+                Number(
+                    transaction.amount || 0
+                ),
+
+            0
+        );
+
+}
+
+
+/* =====================================================
    MONTHLY PAYROLL CALCULATION
 ===================================================== */
 
@@ -1077,13 +1207,22 @@ function payrollFor(
 
     /*
        Remaining salary.
+
+       Any microscopic floating-point remainder
+       is treated as zero.
     */
 
-    const pendingSalary =
+    const pendingSalaryRaw =
         Math.max(
             0,
             salaryDue -
             salaryPaid
+        );
+
+
+    const pendingSalary =
+        positiveBalance(
+            pendingSalaryRaw
         );
 
 
@@ -1092,7 +1231,7 @@ function payrollFor(
 
 
     if (
-        salaryDue <= 0
+        salaryDue <= 0.009
     ) {
 
         status =
@@ -1100,7 +1239,7 @@ function payrollFor(
 
     } else if (
         salaryPaid >=
-        salaryDue
+        salaryDue - 0.009
     ) {
 
         status =
@@ -1179,46 +1318,6 @@ function payrollFor(
             ).padStart(2, "0")}`
 
     };
-
-}
-
-
-/* =====================================================
-   MONTHLY TRANSACTION TOTAL
-===================================================== */
-
-function getMonthlyTransactionTotal(
-    employee,
-    month,
-    type
-) {
-
-    return state.transactions
-        .filter(
-            transaction =>
-
-                transaction.employeeId ===
-                employee.id &&
-
-                transaction.type ===
-                type &&
-
-                monthKey(
-                    transaction.date
-                ) === month
-        )
-        .reduce(
-            (
-                total,
-                transaction
-            ) =>
-                total +
-                Number(
-                    transaction.amount || 0
-                ),
-
-            0
-        );
 
 }
 
@@ -1528,8 +1627,8 @@ function getPreviousPendingSalary(
         ) {
 
             totalPending +=
-                Number(
-                    payroll.pending || 0
+                positiveBalance(
+                    payroll.pending
                 );
 
         }
@@ -1545,8 +1644,7 @@ function getPreviousPendingSalary(
     }
 
 
-    return Math.max(
-        0,
+    return positiveBalance(
         totalPending
     );
 
@@ -1924,7 +2022,9 @@ function renderDashboard() {
                 row
             ) =>
                 total +
-                row.pending,
+                positiveBalance(
+                    row.pending
+                ),
 
             0
         );
@@ -1947,7 +2047,9 @@ function renderDashboard() {
             )
             .filter(
                 row =>
-                    row.pending > 0
+                    positiveBalance(
+                        row.pending
+                    ) > 0
             );
 
 
@@ -1958,7 +2060,9 @@ function renderDashboard() {
                 row
             ) =>
                 total +
-                row.pending,
+                positiveBalance(
+                    row.pending
+                ),
 
             0
         );
@@ -2009,7 +2113,9 @@ function renderDashboard() {
             row =>
                 row.status ===
                 "PENDING" &&
-                Number(row.pending || 0) > 0
+                positiveBalance(
+                    row.pending
+                ) > 0
         ).length;
 
 
@@ -2144,7 +2250,9 @@ function renderDashboard() {
 
                                                         <b>
                                                             ${money(
-                                                                row.pending
+                                                                positiveBalance(
+                                                                    row.pending
+                                                                )
                                                             )}
                                                         </b>
 
@@ -2330,7 +2438,7 @@ function renderDashboard() {
 
                                     <td class="num">
                                         <b>
-                                            ${money(
+                                            ${pendingMoney(
                                                 row.pending
                                             )}
                                         </b>
@@ -2339,11 +2447,15 @@ function renderDashboard() {
                                     <td class="num">
 
                                         ${
-                                            previousPending > 0
+                                            positiveBalance(
+                                                previousPending
+                                            ) > 0
                                                 ?
                                             `<b>
                                                 ${money(
-                                                    previousPending
+                                                    positiveBalance(
+                                                        previousPending
+                                                    )
                                                 )}
                                             </b>`
                                                 :
@@ -2537,6 +2649,7 @@ function renderEmployees() {
                         </td>
 
                     </tr>
+
                 `
             }
 
@@ -3041,7 +3154,9 @@ function renderReport() {
                 row
             ) =>
                 total +
-                row.payroll.pending,
+                positiveBalance(
+                    row.payroll.pending
+                ),
 
             0
         );
@@ -3068,8 +3183,8 @@ function renderReport() {
             row =>
                 row.payroll.status ===
                 "PENDING" &&
-                Number(
-                    row.payroll.pending || 0
+                positiveBalance(
+                    row.payroll.pending
                 ) > 0
         ).length;
 
@@ -3122,7 +3237,9 @@ function renderReport() {
             )
             .filter(
                 row =>
-                    row.pending > 0
+                    positiveBalance(
+                        row.pending
+                    ) > 0
             );
 
 
@@ -3133,7 +3250,9 @@ function renderReport() {
                 row
             ) =>
                 total +
-                row.pending,
+                positiveBalance(
+                    row.pending
+                ),
 
             0
         );
@@ -3288,7 +3407,9 @@ function renderReport() {
 
                                                         <b>
                                                             ${money(
-                                                                row.pending
+                                                                positiveBalance(
+                                                                    row.pending
+                                                                )
                                                             )}
                                                         </b>
 
@@ -3335,12 +3456,8 @@ function renderReport() {
         existingPreviousPending
     ) {
 
-        existingPreviousPending.outerHTML =
-            `
-                <div id="previousPendingReport">
-                    ${previousPendingHTML}
-                </div>
-            `;
+        existingPreviousPending.innerHTML =
+            previousPendingHTML;
 
     } else if ($("reportTable")) {
 
@@ -3451,7 +3568,7 @@ function renderReport() {
 
                                 <td class="num">
                                     <b>
-                                        ${money(
+                                        ${pendingMoney(
                                             row.payroll.pending
                                         )}
                                     </b>
@@ -5225,19 +5342,189 @@ if ($("reportMonth"))
 
 /* =====================================================
    PRINT REPORT
-   ORIGINAL PRINT BEHAVIOUR RETAINED
+   SHOW SELECTED REPORT MONTH
 
    IMPORTANT:
-   No selected-month print-date modification.
+
+   This does NOT change payroll calculations.
+
+   It temporarily adds a print-only heading
+   immediately before the report table.
+
+   The heading is removed after printing.
+
+   The selected report month is used, NOT the
+   computer's current date.
 ===================================================== */
+
+function printPayrollReport() {
+
+    const reportMonth =
+        $("reportMonth")
+            ? $("reportMonth").value
+            : currentMonth();
+
+
+    const formattedMonth =
+        formatReportMonth(
+            reportMonth
+        );
+
+
+    if (!$("reportTable")) {
+
+        window.print();
+
+        return;
+
+    }
+
+
+    /*
+       Prevent duplicate temporary headers.
+    */
+
+    const existingHeader =
+        document.getElementById(
+            "temporaryPayrollPrintHeader"
+        );
+
+
+    if (existingHeader) {
+
+        existingHeader.remove();
+
+    }
+
+
+    /*
+       Create a temporary print heading.
+    */
+
+    const printHeader =
+        document.createElement(
+            "div"
+        );
+
+
+    printHeader.id =
+        "temporaryPayrollPrintHeader";
+
+
+    printHeader.innerHTML = `
+
+        <div
+            style="
+                text-align:center;
+                font-family:Arial,sans-serif;
+                margin:0 0 20px 0;
+                padding:0;
+            "
+        >
+
+            <div
+                style="
+                    font-size:24px;
+                    font-weight:bold;
+                    margin-bottom:6px;
+                "
+            >
+                AL JEFOON TENTS
+            </div>
+
+            <div
+                style="
+                    font-size:20px;
+                    font-weight:bold;
+                    margin-bottom:4px;
+                "
+            >
+                MONTHLY PAYROLL REPORT
+            </div>
+
+            <div
+                style="
+                    font-size:17px;
+                    font-weight:bold;
+                "
+            >
+                ${escapeHTML(
+                    formattedMonth
+                )}
+            </div>
+
+        </div>
+
+    `;
+
+
+    /*
+       Put the heading directly before the report table.
+       This avoids changing the navigation, report
+       section structure, or page layout.
+    */
+
+    $("reportTable").parentNode.insertBefore(
+        printHeader,
+        $("reportTable")
+    );
+
+
+    /*
+       Remove any previous print date element
+       created by this script.
+    */
+
+    const oldPrintDate =
+        document.getElementById(
+            "temporaryPayrollPrintDate"
+        );
+
+
+    if (oldPrintDate) {
+
+        oldPrintDate.remove();
+
+    }
+
+
+    /*
+       Print.
+    */
+
+    window.print();
+
+
+    /*
+       Remove temporary heading after the print
+       dialog has closed.
+    */
+
+    setTimeout(
+        () => {
+
+            const header =
+                document.getElementById(
+                    "temporaryPayrollPrintHeader"
+                );
+
+
+            if (header) {
+
+                header.remove();
+
+            }
+
+        },
+        1000
+    );
+
+}
+
 
 if ($("printReportBtn"))
     $("printReportBtn").onclick =
-        () => {
-
-            window.print();
-
-        };
+        printPayrollReport;
 
 
 /* =====================================================
