@@ -1092,6 +1092,16 @@ body.dark-mode .status.leave {
         display: block !important;
     }
 
+    /* ISOLATION RULES FOR LOAN-ONLY PRINTING */
+    body.print-loans-only .report-summary,
+    body.print-loans-only .panel:not(.loan-report-container) {
+        display: none !important;
+    }
+
+    body.print-loans-only .loan-report-container {
+        display: block !important;
+        width: 100% !important;
+    }
 
     .panel,
     body.dark-mode .panel {
