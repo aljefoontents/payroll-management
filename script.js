@@ -1,4 +1,39 @@
 /* =====================================================
+   PAYROLL PASSWORD PROTECTION
+   ===================================================== */
+
+const PAYROLL_PASSWORD = "ajt1978#";
+
+function checkPayrollPassword() {
+  const enteredPassword =
+    document.getElementById("payrollPassword").value;
+
+  if (enteredPassword === PAYROLL_PASSWORD) {
+    document.getElementById("passwordScreen").style.display = "none";
+    sessionStorage.setItem("payrollUnlocked", "true");
+  } else {
+    document.getElementById("passwordError").style.display = "block";
+    document.getElementById("payrollPassword").value = "";
+    document.getElementById("payrollPassword").focus();
+  }
+}
+
+/* Automatically unlock during the current browser session */
+document.addEventListener("DOMContentLoaded", function () {
+
+  if (sessionStorage.getItem("payrollUnlocked") === "true") {
+    document.getElementById("passwordScreen").style.display = "none";
+  }
+
+  document.getElementById("payrollPassword").addEventListener("keydown", function(event) {
+    if (event.key === "Enter") {
+      checkPayrollPassword();
+    }
+  });
+
+});
+
+/* =====================================================
    AL JEFOON TENTS
    PAYROLL SYSTEM
    SCRIPT.JS
