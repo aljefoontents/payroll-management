@@ -70,6 +70,12 @@ document.addEventListener("DOMContentLoaded", function () {
 const STORAGE_KEY = "alJefoonPayrollV1";
 const DARK_MODE_KEY = "alJefoonPayrollDarkMode";
 
+/* =====================================================
+   GOOGLE SHEETS CLOUD BACKUP
+   ===================================================== */
+
+const GOOGLE_PAYROLL_URL =
+  "https://script.google.com/macros/s/AKfycbw_UQvfi3Hr6UXGGOkkL25W8QhswcNCbt5ad1BcLqYC5FRkg2w8kOHvrjXsmMekz0Ga/exec";
 
 /* =====================================================
    APPLICATION STATE
