@@ -817,11 +817,77 @@ const PAYROLL_BACKUP_URL =
 
 function backupPayrollToGoogleSheets() {
 
-    const data = {};
+    const payrollData = localStorage.getItem("alJefoonPayrollV1");
 
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        data[key] = localStorage.getItem(key);
+    if (!payrollData) {
+        alert("Payroll database was not found.");
+        return;
+    }
+
+    fetch(PAYROLL_BACKUP_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: {
+            "Content-Type": "text/plain"
+        },
+        body: payrollData
+    });
+
+    alert("Payroll backup sent to Google Sheets.");
+}
+
+window.addEventListener("DOMContentLoaded", function () {
+
+    const btn = document.createElement("button");
+
+    btn.type = "button";
+    btn.textContent = "Backup to Google Sheets";
+    btn.onclick = backupPayrollToGoogleSheets;
+
+    btn.style.position = "fixed";
+    btn.style.bottom = "20px";
+    btn.style.right = "20px";
+    btn.style.zIndex = "99999";
+    btn.style.padding = "12px 20px";
+    btn.style.cursor = "pointer";
+
+    document.body.appendChild(btn);
+
+});
+</script>
+    }
+
+    fetch(PAYROLL_BACKUP_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: {
+            "Content-Type": "text/plain"
+        },
+        body: payrollData
+    });
+
+    alert("Payroll backup sent to Google Sheets.");
+}
+
+window.addEventListener("DOMContentLoaded", function () {
+
+    const btn = document.createElement("button");
+
+    btn.type = "button";
+    btn.textContent = "Backup to Google Sheets";
+    btn.onclick = backupPayrollToGoogleSheets;
+
+    btn.style.position = "fixed";
+    btn.style.bottom = "20px";
+    btn.style.right = "20px";
+    btn.style.zIndex = "99999";
+    btn.style.padding = "12px 20px";
+    btn.style.cursor = "pointer";
+
+    document.body.appendChild(btn);
+
+});
+</script>
     }
 
     fetch(PAYROLL_BACKUP_URL, {
