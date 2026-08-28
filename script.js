@@ -5691,3 +5691,120 @@ function loadDarkMode() {
 loadDarkMode();
 
 renderAll();
+
+/* =====================================================
+   ONE-TIME PAYROLL DATA MIGRATION TO GOOGLE SHEETS
+   ===================================================== */
+
+const GOOGLE_PAYROLL_URL =
+  "https://script.google.com/macros/s/AKfycbw_UQvfi3Hr6UXGGOkkL25W8QhswcNCbt5ad1BcLqYC5FRkg2w8kOHvrjXsmMekz0Ga/exec";
+
+
+async function migratePayrollToGoogleSheets() {
+
+  const savedData =
+    localStorage.getItem(STORAGE_KEY);
+
+  if (!savedData) {
+
+    alert("No payroll data was found on this computer.");
+
+    return;
+  }
+
+  let localData;
+
+  try {
+
+    localData = JSON.parse(savedData);
+
+  } catch (error) {
+
+    alert("Your payroll data could not be read.");
+
+    console.error(error);
+
+    return;
+  }
+
+
+  const confirmed =
+    confirm(
+      "This will copy your current Payroll data to Google Sheets.\n\n" +
+      "Your local payroll data will NOT be deleted.\n\n" +
+      "Continue?"
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        GOOGLE_PAYROLL_URL,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "text/plain;charset=utf-8"
+          },
+
+          body: JSON.stringify({
+
+            employees:
+              localData.employees || [],
+
+            transactions:
+              localData.transactions || [],
+
+            leaves:
+              localData.leaves || []
+
+          })
+        }
+      );
+
+
+    const result =
+      await response.json();
+
+
+    if (result.success) {
+
+      alert(
+        "SUCCESS!\n\n" +
+        "Your payroll data has been copied to Google Sheets."
+      );
+
+      console.log(
+        "Google Sheets migration:",
+        result
+      );
+
+    } else {
+
+      alert(
+        "Google Sheets migration failed.\n\n" +
+        result.error
+      );
+
+    }
+
+  } catch (error) {
+
+    console.error(
+      "Migration error:",
+      error
+    );
+
+    alert(
+      "Unable to connect to Google Sheets.\n\n" +
+      "Your local payroll data has NOT been changed."
+    );
+
+  }
+}
