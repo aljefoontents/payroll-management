@@ -805,17 +805,36 @@
 
 
 
-    <!-- =====================================================
-         JAVASCRIPT
-    ====================================================== -->
-
-<button type="button" onclick="backupPayrollToGoogleSheets()">
-    Backup to Google Sheets
-</button>
+   <!-- =====================================================
+     JAVASCRIPT
+====================================================== -->
 
 <script src="script.js"></script>
 
 <script>
+const PAYROLL_BACKUP_URL =
+"https://script.google.com/macros/s/AKfycbzZkYycngO7d_2HdWTLcz-J1BhNfIQizKXfmenTcrJvJmLtLNemSc4zqZIIjcw59kwh/exec";
+
+function backupPayrollToGoogleSheets() {
+    const data = {};
+
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        data[key] = localStorage.getItem(key);
+    }
+
+    fetch(PAYROLL_BACKUP_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: {
+            "Content-Type": "text/plain"
+        },
+        body: JSON.stringify(data)
+    });
+
+    alert("Payroll backup sent to Google Sheets.");
+}
+
 window.addEventListener("DOMContentLoaded", function () {
     const btn = document.createElement("button");
 
@@ -835,4 +854,5 @@ window.addEventListener("DOMContentLoaded", function () {
 </script>
 
 </body>
+
 </html>
