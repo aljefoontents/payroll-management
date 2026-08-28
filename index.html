@@ -809,31 +809,11 @@
          JAVASCRIPT
     ====================================================== -->
 
-    <script src="script.js"></script>
-
-</body>
-
-</html>
-
-<script>
-const PAYROLL_BACKUP_URL =
-"https://script.google.com/macros/s/AKfycbzZkYycngO7d_2HdWTLcz-J1BhNfIQizKXfmenTcrJvJmLtLNemSc4zqZIIjcw59kwh/exec";
-
-<button type="button"
-        onclick="backupPayrollToGoogleSheets()">
+<button type="button" onclick="backupPayrollToGoogleSheets()">
     Backup to Google Sheets
 </button>
-    }
 
-    fetch(PAYROLL_BACKUP_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: {
-            "Content-Type": "text/plain"
-        },
-        body: JSON.stringify(data)
-    });
+<script src="script.js"></script>
 
-    alert("Payroll backup sent to Google Sheets.");
-}
-</script>
+</body>
+</html>
