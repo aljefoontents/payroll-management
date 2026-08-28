@@ -819,12 +819,10 @@
 const PAYROLL_BACKUP_URL =
 "https://script.google.com/macros/s/AKfycbzZkYycngO7d_2HdWTLcz-J1BhNfIQizKXfmenTcrJvJmLtLNemSc4zqZIIjcw59kwh/exec";
 
-function backupPayrollToGoogleSheets() {
-    const data = {};
-
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        data[key] = localStorage.getItem(key);
+<button type="button"
+        onclick="backupPayrollToGoogleSheets()">
+    Backup to Google Sheets
+</button>
     }
 
     fetch(PAYROLL_BACKUP_URL, {
