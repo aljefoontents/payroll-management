@@ -38,7 +38,67 @@
 
 <body>
 
+<div id="passwordScreen" style="
+  position:fixed;
+  inset:0;
+  background:#000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:99999;
+  font-family:Arial,Helvetica,sans-serif;
+">
+  <div style="
+    background:#fff;
+    width:320px;
+    padding:30px;
+    border-radius:10px;
+    text-align:center;
+  ">
+    <h2 style="margin-top:0;">AL JEFOON TENTS</h2>
 
+    <p>Payroll System</p>
+
+    <input
+      type="password"
+      id="payrollPassword"
+      placeholder="Enter Password"
+      style="
+        width:100%;
+        padding:12px;
+        box-sizing:border-box;
+        margin-bottom:12px;
+        border:1px solid #ccc;
+        border-radius:5px;
+        font-size:16px;
+      "
+    >
+
+    <button
+      onclick="checkPayrollPassword()"
+      style="
+        width:100%;
+        padding:12px;
+        background:#fcc224;
+        border:none;
+        border-radius:5px;
+        font-weight:bold;
+        cursor:pointer;
+      "
+    >
+      LOGIN
+    </button>
+
+    <div id="passwordError" style="
+      color:red;
+      margin-top:10px;
+      display:none;
+    ">
+      Incorrect password
+    </div>
+  </div>
+</div>
+    
     <!-- =====================================================
          SIDEBAR
     ====================================================== -->
