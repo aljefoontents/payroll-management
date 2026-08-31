@@ -4393,24 +4393,41 @@ function transactionFormHTML(
                         Advance
                     </option>
 
-                    <option
-                        value="loan"
-                        ${
-                            type === "loan"
-                                ? "selected"
-                                : ""
-                        }
-                    >
-                        Loan Given
-                    </option>
+                   ```javascript
+<option
+    value="loan"
+    ${
+        type === "loan"
+            ? "selected"
+            : ""
+    }
+>
+    Loan Given
+</option>
 
-                    <option
-                        value="loan_repayment"
-                        ${
-                            type === "loan_repayment"
-                                ? "selected"
-                                : ""
-                        }
+<option
+    value="advance_repayment"
+    ${
+        type === "advance_repayment"
+            ? "selected"
+            : ""
+    }
+>
+    Advance Repayment
+</option>
+
+<option
+    value="loan_repayment"
+    ${
+        type === "loan_repayment"
+            ? "selected"
+            : ""
+    }
+>
+    Loan Repayment
+</option>
+```
+
                     >
                         Loan Repayment
                     </option>
