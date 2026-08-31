@@ -1023,6 +1023,7 @@ function getMonthlyTransactionTotal(
    MONTHLY PAYROLL CALCULATION
 ===================================================== */
 
+```javascript
 function payrollFor(
     employee,
     month
@@ -1054,15 +1055,6 @@ function payrollFor(
 
     /*
        Salary calculation start day.
-
-       Example:
-
-       August 20
-       = salary starts from August 20.
-
-       Payable calendar days:
-       20 through 31
-       = 12 days.
     */
 
     const salaryStartDay =
@@ -1124,6 +1116,13 @@ function payrollFor(
                     "advance"
                 ),
 
+            advanceRepayments:
+                getMonthlyTransactionTotal(
+                    employee,
+                    month,
+                    "advance_repayment"
+                ),
+
             loanRepayments:
                 getMonthlyTransactionTotal(
                     employee,
@@ -1158,6 +1157,262 @@ function payrollFor(
         };
 
     }
+
+
+    /*
+       Number of leave days during
+       the salary period.
+    */
+
+    const leaveDays =
+        getLeaveDaysForMonth(
+            employee,
+            month,
+            salaryStartDay,
+            daysInMonth
+        );
+
+
+    /*
+       Number of days for which salary
+       can actually be paid.
+    */
+
+    const payableDays =
+        Math.max(
+            0,
+            salaryPeriodDays -
+            leaveDays
+        );
+
+
+    /*
+       Daily salary is based on the actual
+       number of days in the selected month.
+    */
+
+    const dailySalary =
+        daysInMonth > 0
+            ? basicSalary / daysInMonth
+            : 0;
+
+
+    /*
+       Salary due.
+    */
+
+    const salaryDue =
+        Math.max(
+            0,
+            dailySalary *
+            payableDays
+        );
+
+
+    /*
+       Salary already paid.
+    */
+
+    const salaryPaidRaw =
+        getMonthlySalaryPaid(
+            employee,
+            month
+        );
+
+
+    const salaryPaid =
+        Math.min(
+            Math.max(
+                0,
+                salaryPaidRaw
+            ),
+            salaryDue
+        );
+
+
+    /*
+       Advance given during this month.
+
+       IMPORTANT:
+
+       The advance itself does NOT reduce
+       pending salary.
+
+       Only an Advance Repayment reduces
+       pending salary.
+    */
+
+    const advances =
+        getMonthlyTransactionTotal(
+            employee,
+            month,
+            "advance"
+        );
+
+
+    /*
+       Advance actually recovered/repaid.
+    */
+
+    const advanceRepayments =
+        getMonthlyTransactionTotal(
+            employee,
+            month,
+            "advance_repayment"
+        );
+
+
+    /*
+       Do not allow advance repayment to be
+       greater than the advance balance for
+       the selected month.
+    */
+
+    const advanceRecovered =
+        Math.min(
+            Math.max(
+                0,
+                advanceRepayments
+            ),
+            advances
+        );
+
+
+    /*
+       Loan repayments remain separate.
+    */
+
+    const loanRepayments =
+        getMonthlyTransactionTotal(
+            employee,
+            month,
+            "loan_repayment"
+        );
+
+
+    /*
+       Other adjustments remain separate.
+    */
+
+    const adjustments =
+        getMonthlyTransactionTotal(
+            employee,
+            month,
+            "adjustment"
+        );
+
+
+    /*
+       Remaining salary.
+
+       Example:
+
+       Salary due          = 1700
+       Salary paid         = 0
+       Advance             = 500
+       Advance repayment   = 200
+
+       Pending salary:
+       1700 - 0 - 200
+       = 1500
+    */
+
+    const pendingSalaryRaw =
+        Math.max(
+            0,
+            salaryDue -
+            salaryPaid -
+            advanceRecovered
+        );
+
+
+    const pendingSalary =
+        positiveBalance(
+            pendingSalaryRaw
+        );
+
+
+    /*
+       Salary status.
+    */
+
+    let status =
+        "PENDING";
+
+
+    if (
+        salaryDue <= 0.009
+    ) {
+
+        status =
+            "FULLY PAID";
+
+    } else if (
+        salaryPaid +
+        advanceRecovered >=
+        salaryDue - 0.009
+    ) {
+
+        status =
+            "FULLY PAID";
+
+    } else if (
+        salaryPaid +
+        advanceRecovered > 0
+    ) {
+
+        status =
+            "PARTIALLY PAID";
+
+    }
+
+
+    return {
+
+        salary:
+            basicSalary,
+
+        food:
+            foodAllowance,
+
+        salaryDue:
+            salaryDue,
+
+        salaryPaid:
+            salaryPaid,
+
+        pending:
+            pendingSalary,
+
+        status,
+
+        advances,
+
+        advanceRepayments,
+
+        advanceRecovered,
+
+        loanRepayments,
+
+        adjustments,
+
+        leaveDays,
+
+        payableDays,
+
+        salaryStartDay,
+
+        salaryPeriodDays,
+
+        salaryStartDate:
+            `${month}-${String(
+                salaryStartDay
+            ).padStart(2, "0")}`
+
+    };
+
+}
+```
 
 
     /*
