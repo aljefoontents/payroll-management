@@ -2772,166 +2772,28 @@ function renderTransactions() {
     }
 
 
-    const labels = {
+  ```javascript
+const TRANSACTION_LABELS = {
 
-        salary:
-            "Salary Payment",
+    salary:
+        "Salary Payment",
 
-        advance:
-            "Advance",
+    advance:
+        "Advance",
 
-        loan:
-            "Loan Given",
+    advance_repayment:
+        "Advance Repayment",
 
-        loan_repayment:
-            "Loan Repayment",
+    loan:
+        "Loan Given",
 
-        adjustment:
-            "Other Adjustment"
+    loan_repayment:
+        "Loan Repayment",
 
-    };
-
-
-    $("transactionsTable").innerHTML = `
-
-        <thead>
-
-            <tr>
-
-                <th>Date</th>
-
-                <th>Employee</th>
-
-                <th>Type</th>
-
-                <th class="num">
-                    Amount
-                </th>
-
-                <th>Salary From</th>
-
-                <th>Note</th>
-
-                <th>Actions</th>
-
-            </tr>
-
-        </thead>
-
-        <tbody>
-
-            ${
-                rows.length
-                    ?
-                rows
-                    .map(
-                        transaction => `
-
-                            <tr>
-
-                                <td>
-                                    ${escapeHTML(
-                                        transaction.date
-                                    )}
-                                </td>
-
-                                <td>
-
-                                    <b>
-                                        ${escapeHTML(
-                                            transaction.employeeId
-                                        )}
-                                    </b>
-
-                                    -
-
-                                    ${escapeHTML(
-                                        employeeName(
-                                            transaction.employeeId
-                                        )
-                                    )}
-
-                                </td>
-
-                                <td>
-                                    ${
-                                        labels[
-                                            transaction.type
-                                        ] ||
-                                        escapeHTML(
-                                            transaction.type
-                                        )
-                                    }
-                                </td>
-
-                                <td class="num">
-                                    ${money(
-                                        transaction.amount
-                                    )}
-                                </td>
-
-                                <td>
-                                    ${
-                                        transaction.type === "salary" &&
-                                        transaction.salaryStartDate
-                                            ?
-                                        escapeHTML(
-                                            transaction.salaryStartDate
-                                        )
-                                            :
-                                        "-"
-                                    }
-                                </td>
-
-                                <td>
-                                    ${escapeHTML(
-                                        transaction.note
-                                    )}
-                                </td>
-
-                                <td>
-
-                                    <button
-                                        class="action-btn"
-                                        onclick="editTransaction('${transaction.id}')"
-                                    >
-                                        Edit
-                                    </button>
-
-                                    <button
-                                        class="action-btn"
-                                        onclick="deleteTransaction('${transaction.id}')"
-                                    >
-                                        Delete
-                                    </button>
-
-                                </td>
-
-                            </tr>
-
-                        `
-                    )
-                    .join("")
-                    :
-                `
-                    <tr>
-
-                        <td
-                            colspan="7"
-                            class="empty"
-                        >
-                            No transactions found.
-                        </td>
-
-                    </tr>
-                `
-            }
-
-        </tbody>
-
-    `;
-
-}
+    adjustment:
+        "Other Adjustment"
+};
+```
 
 
 /* =====================================================
