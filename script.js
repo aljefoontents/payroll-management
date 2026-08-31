@@ -5411,6 +5411,299 @@ function printPayrollReport() {
     }
 
     /*
+       Check whether Pending Only is selected.
+    */
+
+    const pendingOnly =
+        $("pendingOnlyPrint")
+            ? $("pendingOnlyPrint").checked
+            : false;
+
+
+    /*
+       Prevent duplicate temporary headers.
+    */
+
+    const existingHeader =
+        document.getElementById(
+            "temporaryPayrollPrintHeader"
+        );
+
+    if (existingHeader) {
+
+        existingHeader.remove();
+
+    }
+
+
+    /*
+       Save the current table HTML
+       so the normal report can be restored
+       after printing.
+    */
+
+    const reportTable =
+        $("reportTable");
+
+    const originalTableHTML =
+        reportTable.innerHTML;
+
+
+    /*
+       If Pending Only is selected,
+       temporarily remove rows where
+       pending salary is zero or less.
+    */
+
+    if (pendingOnly) {
+
+        const rows =
+            reportTable.querySelectorAll(
+                "tbody tr"
+            );
+
+        rows.forEach(
+            row => {
+
+                const rowText =
+                    row.innerText || "";
+
+                /*
+                   Look for a numeric pending amount
+                   in the row.
+
+                   Rows without a positive pending
+                   amount are hidden from printing.
+                */
+
+                const cells =
+                    row.querySelectorAll("td");
+
+                if (!cells.length)
+                    return;
+
+
+                let hasPending =
+                    false;
+
+
+                cells.forEach(
+                    cell => {
+
+                        const text =
+                            cell.innerText
+                                .replace(
+                                    /AED/gi,
+                                    ""
+                                )
+                                .replace(
+                                    /,/g,
+                                    ""
+                                )
+                                .trim();
+
+                        const value =
+                            parseFloat(text);
+
+
+                        if (
+                            !isNaN(value) &&
+                            value > 0
+                        ) {
+
+                            /*
+                               We don't automatically
+                               treat every positive number
+                               as pending because salary,
+                               food, etc. can also be positive.
+
+                               The pending column is checked
+                               below using its header.
+                            */
+
+                        }
+
+                    }
+                );
+
+
+                /*
+                   Find the Pending Salary column.
+                */
+
+                const headers =
+                    reportTable.querySelectorAll(
+                        "thead th"
+                    );
+
+                let pendingColumn =
+                    -1;
+
+
+                headers.forEach(
+                    (header, index) => {
+
+                        const headerText =
+                            header.innerText
+                                .trim()
+                                .toLowerCase();
+
+                        if (
+                            headerText.includes(
+                                "pending"
+                            )
+                        ) {
+
+                            pendingColumn =
+                                index;
+
+                        }
+
+                    }
+                );
+
+
+                if (
+                    pendingColumn >= 0 &&
+                    cells[pendingColumn]
+                ) {
+
+                    const pendingText =
+                        cells[pendingColumn]
+                            .innerText
+                            .replace(
+                                /AED/gi,
+                                ""
+                            )
+                            .replace(
+                                /,/g,
+                                ""
+                            )
+                            .trim();
+
+                    const pendingValue =
+                        parseFloat(
+                            pendingText
+                        );
+
+
+                    if (
+                        isNaN(pendingValue) ||
+                        pendingValue <= 0
+                    ) {
+
+                        row.style.display =
+                            "none";
+
+                    }
+
+                }
+
+            }
+        );
+
+    }
+
+
+    /*
+       Create temporary print heading.
+    */
+
+    const printHeader =
+        document.createElement("div");
+
+    printHeader.id =
+        "temporaryPayrollPrintHeader";
+
+    printHeader.innerHTML = `
+
+        <div
+            style="
+                text-align:center;
+                font-family:Arial,sans-serif;
+                margin:0 0 20px 0;
+                padding:0;
+            "
+        >
+
+            <div
+                style="
+                    font-size:24px;
+                    font-weight:bold;
+                    margin-bottom:6px;
+                "
+            >
+                AL JEFOON TENTS
+            </div>
+
+            <div
+                style="
+                    font-size:20px;
+                    font-weight:bold;
+                    margin-bottom:4px;
+                "
+            >
+                MONTHLY PAYROLL REPORT -
+                ${escapeHTML(formattedMonth)}
+                ${
+                    pendingOnly
+                        ? " - PENDING ONLY"
+                        : ""
+                }
+            </div>
+
+        </div>
+
+    `;
+
+
+    /*
+       Put heading directly before report table.
+    */
+
+    reportTable.parentNode.insertBefore(
+        printHeader,
+        reportTable
+    );
+
+
+    /*
+       Print.
+    */
+
+    window.print();
+
+
+    /*
+       Restore the original report
+       immediately after printing.
+    */
+
+    setTimeout(
+        () => {
+
+            reportTable.innerHTML =
+                originalTableHTML;
+
+
+            const header =
+                document.getElementById(
+                    "temporaryPayrollPrintHeader"
+                );
+
+            if (header) {
+
+                header.remove();
+
+            }
+
+        },
+        1000
+    );
+
+}
+
+    /*
        Prevent duplicate temporary headers.
     */
 
