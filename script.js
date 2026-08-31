@@ -5399,8 +5399,16 @@ function printPayrollReport() {
             ? $("reportMonth").value
             : currentMonth();
 
-    const formattedMonth =
-        formatReportMonth(reportMonth);
+   const formattedMonth =
+    new Date(
+        reportMonth + "-01T00:00:00"
+    ).toLocaleDateString(
+        "en-US",
+        {
+            month: "long",
+            year: "numeric"
+        }
+    );
 
     if (!$("reportTable")) {
 
