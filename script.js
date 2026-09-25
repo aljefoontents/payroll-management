@@ -320,7 +320,7 @@ function generateID(prefix) {
 
 function getNextEmployeeID() {
 
-    let highestNumber = 2;
+    let highestNumber = 0;
 
     state.employees.forEach(employee => {
 
@@ -353,12 +353,10 @@ function getNextEmployeeID() {
         "EMP" +
         String(
             highestNumber + 1
-        ).padStart(1, "0")
+        ).padStart(3, "0")
     );
 
 }
-
-
 /* =====================================================
    GET MONTHLY SALARY PAID
 ===================================================== */
