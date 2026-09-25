@@ -315,7 +315,7 @@ function generateID(prefix) {
 
 /* =====================================================
    AUTOMATIC EMPLOYEE ID
-   STARTS AT EMP003
+   STARTS AT EMP001
 ===================================================== */
 
 function getNextEmployeeID() {
@@ -353,7 +353,7 @@ function getNextEmployeeID() {
         "EMP" +
         String(
             highestNumber + 1
-        ).padStart(3, "0")
+        ).padStart(1, "0")
     );
 
 }
